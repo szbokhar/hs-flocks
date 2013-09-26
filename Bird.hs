@@ -57,7 +57,7 @@ makeFlock width height (lspd, tspd) fact n = do
         y <- randomRIO (-height/2,height/2)
         dir <- randomRIO (0,2*pi)
         spd <- randomRIO (lspd,tspd)
-        return (Bird (x,y) (spd*cos dir,spd*sin dir) (fact*spd) spd 5) )
+        return (Bird (x,y) (spd*cos dir,spd*sin dir) (fact*spd) spd 10) )
     return (Flock birds (20,20) (width,height))
 
 -- |Affect the flock based on user input
@@ -69,20 +69,28 @@ react _ fl = fl
 update :: Float -> Flock Bird -> IO (Flock Bird)
 update time f@(Flock pop tar dim) = do
     pop' <-  map (wrapBirds dim)
-         <$> mapM (move tar) (neighbours 50 pop)
+         <$> mapM (move tar) closeBirds
     return $ f { population = pop' }
+  where closeBirds = neighbours 50 pop
 
 -- |Move every bord in the flock towards the point
 move :: Point -> (Bird, [Bird]) -> IO Bird
 move (v->goal) (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
     return bird { position = toPoint pos'
                 , velocity = toPoint vel' }
-  where goalForce = setMag 3 $ goal - pos
-        crowdForce = sum $ map ((setMag 3) . (pos-) . v . position) birds
-        totalForce = goalForce + crowdForce
-        vel' = restrictDir vel r $
+  where goalForce = setMag 0.25 $ goal - pos
+        crowdForce = sum
+                   $ map ((\f -> let m= (-3/50)*(abs f)+3 in setMag m f)
+                        . (pos-)
+                        . v
+                        . position) birds
+        totalForce = crowdForce + goalForce
+        fvel = restrictDir vel r $
                restrictMag maxspd (0.5*(vel + (
                restrictMag maxspd $ vel+totalForce )))
+        nvel = (foldl' (\a b -> a + (v $ velocity b)) fvel birds)
+             / (1 + (fromIntegral . length) birds)
+        vel' = let p=0.9 in p*fvel + (1-p)*nvel
         pos' = (pos + vel')
 
 -- |Computes all the neighbours in a given radius for each bird
