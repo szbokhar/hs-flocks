@@ -18,9 +18,10 @@ class Drawable a where
     draw :: a -> Picture
 
 -- |A flock of some type of creature
-data Flock a = Flock { population   :: [a]
-                     , target       :: Point
-                     , field        :: (Float, Float) }
+data Flock a = Flock { population       :: [a]
+                     , target           :: Point
+                     , field            :: (Float, Float)
+                     , neighbourhood    :: (Float, Float)}
   deriving (Read, Show, Eq)
 
 -- |A bird creature
@@ -44,7 +45,7 @@ instance Drawable Bird where
 
 -- |Allows a flock of any type of drawable cerature to be drawn
 instance Drawable a => Drawable (Flock a) where
-    draw (Flock pop (tx,ty) (w,h)) =
+    draw (Flock pop (tx,ty) (w,h) _) =
         Pictures $ (rectangleWire w h)
                  : (Translate tx ty $ Color red $ circleSolid 5)
                  : (map draw pop)
@@ -53,12 +54,12 @@ instance Drawable a => Drawable (Flock a) where
 makeFlock :: Float -> Float -> (Float, Float) -> Float -> Int -> IO (Flock Bird)
 makeFlock width height (lspd, tspd) fact n = do
     birds <- forM [1..n] (\_ -> do
-        x <- randomRIO (-width/2,width/2)
-        y <- randomRIO (-height/2,height/2)
-        dir <- randomRIO (0,2*pi)
-        spd <- randomRIO (lspd,tspd)
+        x <- randomRIO (-width/2,width/2)       -- Random x position
+        y <- randomRIO (-height/2,height/2)     -- Random y position
+        dir <- randomRIO (0,2*pi)               -- Direstion of bird
+        spd <- randomRIO (lspd,tspd)            -- Speed of bird
         return (Bird (x,y) (spd*cos dir,spd*sin dir) (fact*spd) spd 10) )
-    return (Flock birds (20,20) (width,height))
+    return (Flock birds (20,20) (width,height) (50,75))
 
 -- |Affect the flock based on user input
 react :: Event -> Flock Bird -> Flock Bird
@@ -67,42 +68,69 @@ react _ fl = fl
 
 -- |Update the flock for each timestep
 update :: Float -> Flock Bird -> IO (Flock Bird)
-update time f@(Flock pop tar dim) = do
-    pop' <-  map (wrapBirds dim)
-         <$> mapM (move tar) closeBirds
+update time f@(Flock pop tar dim (crowdR,visionR)) = do
+    pop' <-  map (wrapBirds dim)                -- Wrap on screen
+         <$> mapM (move tar crowdR) closeBirds  -- Move all birds
     return $ f { population = pop' }
-  where closeBirds = neighbours 50 pop
+  where closeBirds = neighbours visionR pop     -- Find neighbours
 
 -- |Move every bord in the flock towards the point
-move :: Point -> (Bird, [Bird]) -> IO Bird
-move (v->goal) (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
-    return bird { position = toPoint pos'
-                , velocity = toPoint vel' }
-  where goalForce = setMag 0.25 $ goal - pos
-        crowdForce = sum
-                   $ map ((\f -> let m= (-3/50)*(abs f)+3 in setMag m f)
-                        . (pos-)
-                        . v
-                        . position) birds
-        totalForce = crowdForce + goalForce
-        fvel = restrictDir vel r $
-               restrictMag maxspd (0.5*(vel + (
-               restrictMag maxspd $ vel+totalForce )))
-        nvel = (foldl' (\a b -> a + (v $ velocity b)) fvel birds)
-             / (1 + (fromIntegral . length) birds)
-        vel' = let p=0.9 in p*fvel + (1-p)*nvel
-        pos' = (pos + vel')
+move :: Point           -- |Target point that bird is drawn to
+     -> Float           -- |Radius at which bird feels crowded
+     -> (Bird, [Bird])  -- |Bird to update and a list of neighbours
+     -> IO Bird         -- |Updated bird
+move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
+    return bird { position = toPoint pos'       -- Update the position
+                , velocity = toPoint vel' }     -- and velocity of the bird
+  where
+    -- New position and velocity
+    pos' = (pos + vel')
+    vel' = computeCohesion 0.9 fvel nvel
+
+    -- Velocity from resultant forces
+    fvel = restrictDir vel r $
+           restrictMag maxspd (0.5*(vel + (
+           restrictMag maxspd $ vel+totalForce )))
+    -- Average velocity from neighbour birds
+    nvel = (foldl' (\a b -> a+(v$velocity b)) fvel birds)/(1+numNeighbours)
+
+    -- Total force that affects the bird's motion
+    totalForce = neighbourForce+crowdForce+goalForce
+    -- Foce drawing the bird towards the target (mouse)
+    goalForce = let m = abs v; v = (goal-pos) in setMag 0 v
+    -- Force that pushes the bird away from close neighbours
+    crowdForce = sum $ map (computeRepulsion (0,5) pos) birds
+    -- Fore that draws the bird to the average position of all it's neighbours
+    neighbourForce
+        | null birds    = V 0 0
+        | otherwise     =
+            setMag 1 $ ((sum $ map (v . position) birds) / numNeighbours) - pos
+
+    -- Number of neighbours the bird has
+    numNeighbours = fromIntegral $ length birds
+    -- Compute the repulsion force from a close neighbour
+    computeRepulsion (low, high) p bird
+        | s' mag > crowdR   = V 0 0
+        | otherwise         = setMag (mag*(low-high)/(S crowdR)+high) vec
+      where vec = pos-(v $ position bird)
+            mag = abs vec
+    -- Compute the cohesion for a bird's velocity
+    computeCohesion p v1 v2 = v (m*(cos theta),m*(sin theta))
+      where m       = s' $ abs v1
+            theta   = (\(V x y) -> atan2 y x) $ p*(norm v1) + (1-p)*(norm v2)
 
 -- |Computes all the neighbours in a given radius for each bird
 neighbours :: Float -> [Bird] -> [(Bird,[Bird])]
 neighbours rad = foldl' (addBird []) []
   where addBird :: [Bird] -> [(Bird,[Bird])] -> Bird -> [(Bird,[Bird])]
         addBird n [] b = [(b,n)]
-        addBird n ((t@(Bird (v->p2) _ _ _ _),tn):xs) b@(Bird (v->p1) _ _ _ _)
-            | abs (p1-p2) > S rad = (t,tn) : (addBird n xs b)
-            | otherwise           = (t,b:tn) : (addBird (t:n) xs b)
+        addBird n ((t@(Bird (v->p2) (v->v2) _ _ _),tn):xs) b@(Bird (v->p1) (v->v1) _ _ _)
+            | abs (p1-p2) > S rad   = (t,tn) : (addBird n xs b)
+            | otherwise             = (t,b:tn) : (addBird (t:n) xs b)
+          where front1 = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
+                front2 = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
 
--- |Wrap the birds
+-- |Wrap the birds within the boundery
 wrapBirds :: (Float, Float) -> Bird -> Bird
 wrapBirds (w,h) bird = bird { position = (wrap x bx, wrap y by) }
   where (x,y) = position bird
