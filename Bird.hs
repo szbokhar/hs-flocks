@@ -1,8 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Bird
-    ( makeFlock, draw, react, update )
-where
+module Bird where
 
 import Control.Monad
 import Control.Applicative              ( (<$>) )
@@ -18,10 +16,12 @@ class Drawable a where
     draw :: a -> Picture
 
 -- |A flock of some type of creature
-data Flock a = Flock { population       :: [a]
-                     , target           :: Point
-                     , field            :: (Float, Float)
-                     , neighbourhood    :: (Float, Float)}
+data Flock a =
+     Flock { population       :: [a]            -- List of population members
+           , target           :: Point          -- Point all members are drawn to
+           , field            :: (Float, Float) -- Game field
+           , neighbourhood    :: (Float, Float) -- Crowd and vision radius
+           }
   deriving (Read, Show, Eq)
 
 -- |A bird creature
@@ -75,10 +75,10 @@ update time f@(Flock pop tar dim (crowdR,visionR)) = do
   where closeBirds = neighbours visionR pop     -- Find neighbours
 
 -- |Move every bord in the flock towards the point
-move :: Point           -- |Target point that bird is drawn to
-     -> Float           -- |Radius at which bird feels crowded
-     -> (Bird, [Bird])  -- |Bird to update and a list of neighbours
-     -> IO Bird         -- |Updated bird
+move :: Point           -- Target point that bird is drawn to
+     -> Float           -- Radius at which bird feels crowded
+     -> (Bird, [Bird])  -- Bird to update and a list of neighbours
+     -> IO Bird         -- Updated bird
 move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
     return bird { position = toPoint pos'       -- Update the position
                 , velocity = toPoint vel' }     -- and velocity of the bird
@@ -120,7 +120,9 @@ move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
             theta   = (\(V x y) -> atan2 y x) $ p*(norm v1) + (1-p)*(norm v2)
 
 -- |Computes all the neighbours in a given radius for each bird
-neighbours :: Float -> [Bird] -> [(Bird,[Bird])]
+neighbours :: Float             -- Neighbourhood radius
+           -> [Bird]            -- List of birds
+           -> [(Bird,[Bird])]   -- List of birds and neighbours within radius
 neighbours rad = foldl' (addBird []) []
   where addBird :: [Bird] -> [(Bird,[Bird])] -> Bird -> [(Bird,[Bird])]
         addBird n [] b = [(b,n)]
