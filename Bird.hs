@@ -2,6 +2,7 @@
 
 module Bird where
 
+import Control.DeepSeq
 import Control.Monad
 import Control.Applicative              ( (<$>) )
 import Data.List                        ( foldl' )
@@ -9,6 +10,7 @@ import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import System.Random
 
+import Utilities
 import Vector
 
 -- |Class for all things that can be drawn
@@ -32,16 +34,28 @@ data Bird = Bird { position :: Point
                  , turnRange :: Float }
   deriving (Read, Show, Eq)
 
+instance NFData Bird where
+    rnf (Bird p v s m r) = foldl' seq () $ [rnf p, rnf v, rnf s, rnf m, rnf r]
+
+instance NFData a => NFData (Flock a) where
+    rnf (Flock p t f n) = foldl' seq () $ [rnf p, rnf t, rnf f, rnf n]
+
+writeFlock :: Flock Bird -> [(Float, Float, Float, Float, Float)]
+writeFlock (Flock birds _ _ _) = map makeTup birds
+  where makeTup (Bird (x,y) (vx,vy) s _ _) = (x,y,vx,vy,s)
+
 -- |Allows a bird to be drawn
 instance Drawable Bird where
-    draw (Bird (x,y) (vx,vy) sz _ _) =
-          Pictures [ Translate x y $ Color blue $ Polygon [ p1, p2, p3 ] ]
-      where h = sz/2
-            t = atan2 vy vx
-            t2 = 120*pi/180
-            p1 = (sz*cos(t),sz*sin(t))
-            p2 = (h*cos(t-t2),h*sin(t-t2))
-            p3 = (h*cos(t+t2),h*sin(t+t2))
+    draw (Bird (x,y) (vx,vy) sz _ _) = drawBird (x,y,vx,vy,sz)
+
+drawBird (x,y,vx,vy,sz) =
+      Pictures [ Translate x y $ Color blue $ Polygon [ p1, p2, p3 ] ]
+  where h = sz/2
+        t = atan2 vy vx
+        t2 = 120*pi/180
+        p1 = (sz*cos(t),sz*sin(t))
+        p2 = (h*cos(t-t2),h*sin(t-t2))
+        p3 = (h*cos(t+t2),h*sin(t+t2))
 
 -- |Allows a flock of any type of drawable cerature to be drawn
 instance Drawable a => Drawable (Flock a) where
@@ -68,7 +82,7 @@ react _ fl = fl
 
 -- |Update the flock for each timestep
 update :: Float -> Flock Bird -> IO (Flock Bird)
-update time f@(Flock pop tar dim (crowdR,visionR)) = do
+update _ f@(Flock pop tar dim (crowdR,visionR)) = do
     pop' <-  map (wrapBirds dim)                -- Wrap on screen
          <$> mapM (move tar crowdR) closeBirds  -- Move all birds
     return $ f { population = pop' }
@@ -97,9 +111,9 @@ move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
     -- Total force that affects the bird's motion
     totalForce = neighbourForce+crowdForce+goalForce
     -- Foce drawing the bird towards the target (mouse)
-    goalForce = let m = abs v; v = (goal-pos) in setMag 0 v
+    goalForce = let m = abs v; v = (goal-pos) in setMag 0.2 v
     -- Force that pushes the bird away from close neighbours
-    crowdForce = sum $ map (computeRepulsion (0,5) pos) birds
+    crowdForce = sum $ map (computeRepulsion (0,5)) birds
     -- Fore that draws the bird to the average position of all it's neighbours
     neighbourForce
         | null birds    = V 0 0
@@ -109,7 +123,7 @@ move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
     -- Number of neighbours the bird has
     numNeighbours = fromIntegral $ length birds
     -- Compute the repulsion force from a close neighbour
-    computeRepulsion (low, high) p bird
+    computeRepulsion (low, high) bird
         | s' mag > crowdR   = V 0 0
         | otherwise         = setMag (mag*(low-high)/(S crowdR)+high) vec
       where vec = pos-(v $ position bird)
@@ -139,33 +153,3 @@ wrapBirds (w,h) bird = bird { position = (wrap x bx, wrap y by) }
         (bx,by) = (w/2,h/2)
         wrap val bound  | abs val > bound   = val - 2*(signum val)*bound
                         | otherwise         = val
-
--- View Pattern Aliases
-v :: Point -> Vec2F
-v = toVec
-
-p :: Vec2F -> Point
-p = toPoint
-
-s :: Float -> Vec2F
-s = S
-
-s' :: Vec2F -> Float
-s' (S a) = a
-s' _ = error "Not a scalar"
-
--- Other utility functions
-restrictMag m v
-    | abs v > s m   = setMag (s m) v
-    | otherwise     = v
-
-restrictDir dir r vec
-    | abs dir < s 0.01  = vec
-    | otherwise         = vec'
-  where lr = norm $ rotateVec rd hed
-        rr = norm $ rotateVec (-rd) hed
-        vec'| S rd > (acos $ hed*(norm vec))    = vec
-            | cross (norm vec) hed > 0          = (abs vec)*rr
-            | otherwise                         = (abs vec)*lr
-        hed = norm dir
-        rd = r*pi/180
