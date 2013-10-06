@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Utilities where
 
 import Graphics.Gloss ( Point )
@@ -21,9 +23,9 @@ s' (S a) = a
 s' _ = error "Not a scalar"
 
 -- Other utility functions
-restrictMag m v
-    | abs v > s m   = setMag (s m) v
-    | otherwise     = v
+restrictMag m vec
+    | abs vec > s m     = setMag (s m) vec
+    | otherwise         = vec
 
 restrictDir dir r vec
     | abs dir < s 0.01  = vec
@@ -37,13 +39,22 @@ restrictDir dir r vec
         rd = r*pi/180
 
 -- Compute the repulsion force from a close neighbour
-computeRepulsion crowdR (low, high) myPos otherPos
+computeRepulsion :: Float           -- ^Distance at which a butd is crowded
+                 -> (Float, Float)  -- ^Min and Max repulsion force
+                 -> Vec2F           -- ^Source bird position
+                 -> Vec2F           -- ^Target bird position
+                 -> Vec2F           -- ^Repulsion force
+computeRepulsion crowdR (s->low, s->high) myPos otherPos
     | s' mag > crowdR   = V 0 0
     | otherwise         = setMag (mag*(low-high)/(S crowdR)+high) vec
-  where vec = (v myPos)-(v otherPos)
+  where vec = myPos-otherPos
         mag = abs vec
 
 -- Compute the cohesion for a bird's velocity
-computeCohesion p v1 v2 = v (m*(cos theta),m*(sin theta))
-  where m       = s' $ abs v1
-        theta   = (\(V x y) -> atan2 y x) $ p*(norm v1) + (1-p)*(norm v2)
+computeCohesion :: Float        -- ^Blending paramater
+                -> Vec2F        -- ^Main vector
+                -> Vec2F        -- ^Other vector
+                -> Vec2F        -- ^Cohesion vector
+computeCohesion (s->weight) v1 v2 = m * V (cos theta) (sin theta)
+  where m       = abs v1
+        theta   = (\(V x y) -> atan2 y x) $ weight*(norm v1) + (1-weight)*(norm v2)

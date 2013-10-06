@@ -1,86 +1,17 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Bird where
+module Dynamics where
 
-import Control.DeepSeq
 import Control.Monad
 import Control.Applicative              ( (<$>) )
 import Data.List                        ( foldl' )
-import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import System.Random
 
+import Animal
 import Utilities
 import Vector
-
--------------------------------------------------------------------------------
------------------------------ Class Definitions -------------------------------
-
--- |Class for all things that can be drawn
-class Drawable a where
-    draw :: a -> Picture
-
--- |A flock of some type of creature
-data Flock a =
-     Flock  { population    :: [a]              -- ^List of population members
-            , target        :: Point            -- ^Point all members are drawn
-            , field         :: (Float, Float)   -- ^Game field
-            , neighbourhood :: (Float, Float)   -- ^Crowd and vision radius
-            }
-  deriving (Read, Show, Eq)
-
--- |A bird creature
-data Bird =
-     Bird   { position  :: Point                -- ^Position of the bird
-            , velocity  :: Point                -- ^Velocity vector of the bird
-            , size      :: Float                -- ^Size to draw the bird
-            , maxspeed  :: Float                -- ^The max speed of the bird
-            , turnRange :: Float                -- ^Max allowable turning angle
-            }
-  deriving (Read, Show, Eq)
-
-
--------------------------------------------------------------------------------
------------------------ Instance Definitions for NFData -----------------------
-
--- |Allow a Bird to be fully evaluated with deepseq
-instance NFData Bird where
-    rnf (Bird {..}) = foldl' seq ()
-        $ [rnf position, rnf velocity, rnf size, rnf maxspeed, rnf turnRange]
-
--- |Allow a Flock of NFData to be fully evaluated with deepseq
-instance NFData a => NFData (Flock a) where
-    rnf (Flock {..}) = foldl' seq ()
-        $ [rnf population, rnf target, rnf field, rnf neighbourhood]
-
-
--------------------------------------------------------------------------------
------------------------ Instance Defintions for Drawable ----------------------
-
--- |Allows a bird to be drawn
-instance Drawable Bird where
-    draw (Bird {position=(x,y), velocity=(vx,vy), size=sz}) =
-        drawBird (x,y,vx,vy,sz)
-
--- |Allows a flock of any type of drawable cerature to be drawn
-instance Drawable a => Drawable (Flock a) where
-    draw (Flock {target=(tx,ty), field=(w,h), population=pop}) =
-        Pictures $ (rectangleWire w h)
-                 : (Translate tx ty $ Color red $ circleSolid 5)
-                 : (map draw pop)
-
--- |Barebones bird drawing function
-drawBird :: (Float, Float, Float, Float, Float) -> Picture
-drawBird (x,y,vx,vy,sz) =
-      Pictures [ Translate x y $ Color blue $ Polygon [ p1, p2, p3 ] ]
-  where h = sz/2
-        t = atan2 vy vx
-        t2 = 120*pi/180
-        p1 = (sz*cos(t),sz*sin(t))
-        p2 = (h*cos(t-t2),h*sin(t-t2))
-        p3 = (h*cos(t+t2),h*sin(t+t2))
-
 
 -------------------------------------------------------------------------------
 -------------------------- Flock Dynamics Functions ---------------------------
@@ -129,8 +60,8 @@ move (v->goal) crowdR (bird,birds) = do
     -- Foce drawing the bird towards the target (mouse)
     goalForce = let _ = abs v; v = (goal-pos) in setMag 0.2 v
     -- Force that pushes the bird away from close neighbours
-    crowdForce = sum $ map ((computeRepulsion crowdR (0,5) (p pos)) . position) birds
-    -- Fore that draws the bird to the average position of all it's neighbours
+    crowdForce = sum $ map ((computeRepulsion crowdR (0,5) pos) . v . position) birds
+    -- Force that draws the bird to the average position of all it's neighbours
     neighbourForce [] = V 0 0
     neighbourForce b  = setMag 1 $ ((sum $ map (v . position) b) / numNeighbours) - pos
 
@@ -147,10 +78,10 @@ neighbours rad = foldl' (addBird []) []
         addBird n ((t,tn):xs) b
             | abs (p1-p2) > S rad   = (t,tn) : (addBird n xs b)
             | otherwise             = (t,b:tn) : (addBird (t:n) xs b)
-          where Bird { position = v->p2, velocity = v->v2 } = t
-                Bird { position = v->p1, velocity = v->v1 } = b
-                _ = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
-                _ = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
+          where Bird { position = v->p2, velocity = v->_ } = t
+                Bird { position = v->p1, velocity = v->_ } = b
+                --_ = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
+                --_ = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
 
 -- |Wrap the birds within the boundery
 wrapBirds :: (Float, Float) -> Bird -> Bird

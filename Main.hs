@@ -12,7 +12,8 @@ import System.Environment                       ( getArgs )
 
 import qualified System.IO as F
 
-import Bird         ( makeFlock, draw, react, update, writeFlock, drawBird)
+import Animal       ( drawBird, draw )
+import Dynamics     ( makeFlock, react, update, writeFlock )
 import Utilities    ( int )
 
 -- |Main function
