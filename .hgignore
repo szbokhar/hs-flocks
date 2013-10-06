@@ -4,5 +4,5 @@ syntax: glob
 *.o
 *.hi
 tags
-Main
 doc/*
+FlockSimulation
