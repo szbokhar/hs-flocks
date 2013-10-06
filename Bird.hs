@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Bird where
 
@@ -13,41 +14,64 @@ import System.Random
 import Utilities
 import Vector
 
+-------------------------------------------------------------------------------
+----------------------------- Class Definitions -------------------------------
+
 -- |Class for all things that can be drawn
 class Drawable a where
     draw :: a -> Picture
 
 -- |A flock of some type of creature
 data Flock a =
-     Flock { population       :: [a]            -- List of population members
-           , target           :: Point          -- Point all members are drawn to
-           , field            :: (Float, Float) -- Game field
-           , neighbourhood    :: (Float, Float) -- Crowd and vision radius
-           }
+     Flock  { population    :: [a]              -- ^List of population members
+            , target        :: Point            -- ^Point all members are drawn
+            , field         :: (Float, Float)   -- ^Game field
+            , neighbourhood :: (Float, Float)   -- ^Crowd and vision radius
+            }
   deriving (Read, Show, Eq)
 
 -- |A bird creature
-data Bird = Bird { position :: Point
-                 , velocity :: Point
-                 , size :: Float
-                 , maxspeed :: Float
-                 , turnRange :: Float }
+data Bird =
+     Bird   { position  :: Point                -- ^Position of the bird
+            , velocity  :: Point                -- ^Velocity vector of the bird
+            , size      :: Float                -- ^Size to draw the bird
+            , maxspeed  :: Float                -- ^The max speed of the bird
+            , turnRange :: Float                -- ^Max allowable turning angle
+            }
   deriving (Read, Show, Eq)
 
+
+-------------------------------------------------------------------------------
+----------------------- Instance Definitions for NFData -----------------------
+
+-- |Allow a Bird to be fully evaluated with deepseq
 instance NFData Bird where
-    rnf (Bird p v s m r) = foldl' seq () $ [rnf p, rnf v, rnf s, rnf m, rnf r]
+    rnf (Bird {..}) = foldl' seq ()
+        $ [rnf position, rnf velocity, rnf size, rnf maxspeed, rnf turnRange]
 
+-- |Allow a Flock of NFData to be fully evaluated with deepseq
 instance NFData a => NFData (Flock a) where
-    rnf (Flock p t f n) = foldl' seq () $ [rnf p, rnf t, rnf f, rnf n]
+    rnf (Flock {..}) = foldl' seq ()
+        $ [rnf population, rnf target, rnf field, rnf neighbourhood]
 
-writeFlock :: Flock Bird -> [(Float, Float, Float, Float, Float)]
-writeFlock (Flock birds _ _ _) = map makeTup birds
-  where makeTup (Bird (x,y) (vx,vy) s _ _) = (x,y,vx,vy,s)
+
+-------------------------------------------------------------------------------
+----------------------- Instance Defintions for Drawable ----------------------
 
 -- |Allows a bird to be drawn
 instance Drawable Bird where
-    draw (Bird (x,y) (vx,vy) sz _ _) = drawBird (x,y,vx,vy,sz)
+    draw (Bird {position=(x,y), velocity=(vx,vy), size=sz}) =
+        drawBird (x,y,vx,vy,sz)
 
+-- |Allows a flock of any type of drawable cerature to be drawn
+instance Drawable a => Drawable (Flock a) where
+    draw (Flock {target=(tx,ty), field=(w,h), population=pop}) =
+        Pictures $ (rectangleWire w h)
+                 : (Translate tx ty $ Color red $ circleSolid 5)
+                 : (map draw pop)
+
+-- |Barebones bird drawing function
+drawBird :: (Float, Float, Float, Float, Float) -> Picture
 drawBird (x,y,vx,vy,sz) =
       Pictures [ Translate x y $ Color blue $ Polygon [ p1, p2, p3 ] ]
   where h = sz/2
@@ -57,23 +81,9 @@ drawBird (x,y,vx,vy,sz) =
         p2 = (h*cos(t-t2),h*sin(t-t2))
         p3 = (h*cos(t+t2),h*sin(t+t2))
 
--- |Allows a flock of any type of drawable cerature to be drawn
-instance Drawable a => Drawable (Flock a) where
-    draw (Flock pop (tx,ty) (w,h) _) =
-        Pictures $ (rectangleWire w h)
-                 : (Translate tx ty $ Color red $ circleSolid 5)
-                 : (map draw pop)
 
--- |Creates a random flock of birds
-makeFlock :: Float -> Float -> (Float, Float) -> Float -> Int -> IO (Flock Bird)
-makeFlock width height (lspd, tspd) fact n = do
-    birds <- forM [1..n] (\_ -> do
-        x <- randomRIO (-width/2,width/2)       -- Random x position
-        y <- randomRIO (-height/2,height/2)     -- Random y position
-        dir <- randomRIO (0,2*pi)               -- Direstion of bird
-        spd <- randomRIO (lspd,tspd)            -- Speed of bird
-        return (Bird (x,y) (spd*cos dir,spd*sin dir) (fact*spd) spd 10) )
-    return (Flock birds (20,20) (width,height) (50,75))
+-------------------------------------------------------------------------------
+-------------------------- Flock Dynamics Functions ---------------------------
 
 -- |Affect the flock based on user input
 react :: Event -> Flock Bird -> Flock Bird
@@ -82,21 +92,27 @@ react _ fl = fl
 
 -- |Update the flock for each timestep
 update :: Float -> Flock Bird -> IO (Flock Bird)
-update _ f@(Flock pop tar dim (crowdR,visionR)) = do
-    pop' <-  map (wrapBirds dim)                -- Wrap on screen
-         <$> mapM (move tar crowdR) closeBirds  -- Move all birds
+update _ f@(Flock {neighbourhood=(crowdR,visionR), ..}) = do
+    pop' <-  map (wrapBirds field)                      -- Wrap on screen
+         <$> mapM (move target crowdR) closeBirds       -- Move all birds
     return $ f { population = pop' }
-  where closeBirds = neighbours visionR pop     -- Find neighbours
+  where closeBirds = neighbours visionR population      -- Find neighbours
 
 -- |Move every bord in the flock towards the point
 move :: Point           -- Target point that bird is drawn to
      -> Float           -- Radius at which bird feels crowded
      -> (Bird, [Bird])  -- Bird to update and a list of neighbours
      -> IO Bird         -- Updated bird
-move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
+move (v->goal) crowdR (bird,birds) = do
     return bird { position = toPoint pos'       -- Update the position
                 , velocity = toPoint vel' }     -- and velocity of the bird
   where
+    -- Parts of a bird
+    Bird { position = v->pos
+         , velocity = v->vel
+         , maxspeed = maxspd
+         , turnRange = r} = bird
+
     -- New position and velocity
     pos' = (pos + vel')
     vel' = computeCohesion 0.9 fvel nvel
@@ -109,29 +125,17 @@ move (v->goal) crowdR (bird@(Bird (v->pos) (v->vel) _ maxspd r),birds) = do
     nvel = (foldl' (\a b -> a+(v$velocity b)) fvel birds)/(1+numNeighbours)
 
     -- Total force that affects the bird's motion
-    totalForce = neighbourForce+crowdForce+goalForce
+    totalForce = neighbourForce birds + crowdForce + goalForce
     -- Foce drawing the bird towards the target (mouse)
-    goalForce = let m = abs v; v = (goal-pos) in setMag 0.2 v
+    goalForce = let _ = abs v; v = (goal-pos) in setMag 0.2 v
     -- Force that pushes the bird away from close neighbours
-    crowdForce = sum $ map (computeRepulsion (0,5)) birds
+    crowdForce = sum $ map ((computeRepulsion crowdR (0,5) (p pos)) . position) birds
     -- Fore that draws the bird to the average position of all it's neighbours
-    neighbourForce
-        | null birds    = V 0 0
-        | otherwise     =
-            setMag 1 $ ((sum $ map (v . position) birds) / numNeighbours) - pos
+    neighbourForce [] = V 0 0
+    neighbourForce b  = setMag 1 $ ((sum $ map (v . position) b) / numNeighbours) - pos
 
     -- Number of neighbours the bird has
     numNeighbours = fromIntegral $ length birds
-    -- Compute the repulsion force from a close neighbour
-    computeRepulsion (low, high) bird
-        | s' mag > crowdR   = V 0 0
-        | otherwise         = setMag (mag*(low-high)/(S crowdR)+high) vec
-      where vec = pos-(v $ position bird)
-            mag = abs vec
-    -- Compute the cohesion for a bird's velocity
-    computeCohesion p v1 v2 = v (m*(cos theta),m*(sin theta))
-      where m       = s' $ abs v1
-            theta   = (\(V x y) -> atan2 y x) $ p*(norm v1) + (1-p)*(norm v2)
 
 -- |Computes all the neighbours in a given radius for each bird
 neighbours :: Float             -- Neighbourhood radius
@@ -140,11 +144,13 @@ neighbours :: Float             -- Neighbourhood radius
 neighbours rad = foldl' (addBird []) []
   where addBird :: [Bird] -> [(Bird,[Bird])] -> Bird -> [(Bird,[Bird])]
         addBird n [] b = [(b,n)]
-        addBird n ((t@(Bird (v->p2) (v->v2) _ _ _),tn):xs) b@(Bird (v->p1) (v->v1) _ _ _)
+        addBird n ((t,tn):xs) b
             | abs (p1-p2) > S rad   = (t,tn) : (addBird n xs b)
             | otherwise             = (t,b:tn) : (addBird (t:n) xs b)
-          where front1 = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
-                front2 = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
+          where Bird { position = v->p2, velocity = v->v2 } = t
+                Bird { position = v->p1, velocity = v->v1 } = b
+                _ = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
+                _ = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
 
 -- |Wrap the birds within the boundery
 wrapBirds :: (Float, Float) -> Bird -> Bird
@@ -153,3 +159,31 @@ wrapBirds (w,h) bird = bird { position = (wrap x bx, wrap y by) }
         (bx,by) = (w/2,h/2)
         wrap val bound  | abs val > bound   = val - 2*(signum val)*bound
                         | otherwise         = val
+
+
+-------------------------------------------------------------------------------
+--------------------------- Other Handy Functions -----------------------------
+
+-- |Converts a flock to a consice writable form
+writeFlock :: Flock Bird -> [(Float, Float, Float, Float, Float)]
+writeFlock (Flock { population = birds }) = map makeTup birds
+  where makeTup (Bird (x,y) (vx,vy) s _ _) = (x,y,vx,vy,s)
+
+-- |Creates a random flock of birds
+makeFlock :: Float -> Float -> (Float, Float) -> Float -> Int -> IO (Flock Bird)
+makeFlock width height (lspd, tspd) fact n = do
+    birds <- forM [1..n] (\_ -> do
+        x <- randomRIO (-width/2,width/2)       -- Random x position
+        y <- randomRIO (-height/2,height/2)     -- Random y position
+        dir <- randomRIO (0,2*pi)               -- Direstion of bird
+        spd <- randomRIO (lspd,tspd)            -- Speed of bird
+        return Bird { position = (x,y)
+                    , velocity = (spd*cos dir,spd*sin dir)
+                    , size = (fact*spd)
+                    , maxspeed = spd
+                    , turnRange = 10 }
+        )
+    return Flock { population = birds
+                 , target = (20,20)
+                 , field = (width,height)
+                 , neighbourhood = (50,75) }

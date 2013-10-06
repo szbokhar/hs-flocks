@@ -1,17 +1,18 @@
 module Main where
 
-import Control.Applicative                  ( (<$>) )
-import Control.DeepSeq
-import Control.Monad                        ( forM_, foldM_  )
-import Data.Maybe                           ( isNothing, fromJust )
-import Graphics.Gloss.Interface.IO.Game
-import Graphics.Gloss.Interface.Pure.Simulate
-import System.Environment                   ( getArgs )
-import System.IO                            ( openFile, stdin, stdout
-                                            , IOMode(..)
-                                            , hPutStrLn, hPrint, hClose, hGetContents )
+import Control.Applicative                      ( (<$>) )
+import Control.DeepSeq                          ( deepseq )
+import Control.Monad                            ( forM_, foldM_  )
+import Data.Maybe                               ( isNothing, fromJust )
+import Graphics.Gloss.Interface.IO.Game         ( playIO )
+import Graphics.Gloss.Interface.Pure.Simulate   ( simulate, white
+                                                , Picture( Pictures )
+                                                , Display( InWindow ) )
+import System.Environment                       ( getArgs )
 
-import Bird         ( makeFlock, draw, react, update, Flock, Bird, writeFlock, drawBird)
+import qualified System.IO as F
+
+import Bird         ( makeFlock, draw, react, update, writeFlock, drawBird)
 import Utilities    ( int )
 
 -- |Main function
@@ -34,27 +35,27 @@ main = do
     writeSimulationToFile config = do
         -- Find writing target
         target <- if isNothing (file config)
-                  then return stdout
-                  else openFile (fromJust (file config)) WriteMode
+                  then return F.stdout
+                  else F.openFile (fromJust (file config)) F.WriteMode
         -- Initialize bird flock
         initFlock <- makeFlock 800 600 (4,9) 1 (birdCount config)
         -- Run simulation for specified number of setps
         foldM_ (\fl i -> do
             putStrLn $ "Computing frame " ++ (show i)
-            hPrint target (writeFlock fl)
+            F.hPrint target (writeFlock fl)
             update 0 fl
             ) initFlock [1..(simulationSteps config)]
         -- Close file
-        hClose target
+        F.hClose target
 
     readSimulation config = do
         -- Find reading target
         target <- if isNothing (file config)
-                 then return stdin
-                 else openFile (fromJust (file config)) ReadMode
+                 then return F.stdin
+                 else F.openFile (fromJust (file config)) F.ReadMode
         -- Parse input source into list of simulation steps
         (n, simData) <- (\xs -> ( fromIntegral $ length xs, map read xs))
-                    <$> lines <$> hGetContents target
+                    <$> lines <$> F.hGetContents target
         -- Completly evaluate simulation data
         forM_ (zip [1.0..] simData) (\(i,a) -> do
             a `deepseq` (putStrLn $ "Processing: " ++ (show $ 100*i/n) ++ "%"))
@@ -63,14 +64,22 @@ main = do
             (\(x:_) -> Pictures $ map drawBird x)
             (\_ _ (x:xs) -> if null xs then [x] else xs)
         -- Close source
-        hClose target
+        F.hClose target
 
-    showHelpMessage = putStrLn "This is a help message"
+    showHelpMessage = putStrLn $
+                "FlockSimulation\n"
+             ++ "Options: -n count  - number of birds (default 4)\n"
+             ++ "         -l        - run live simulation (default)\n"
+             ++ "         -o        - write simulation to stdout\n"
+             ++ "         -i        - display simulation read in from stdin\n"
+             ++ "         -f file   - use file instead of stdin/stdout\n"
+             ++ "         -s steps  - number of steps to simulate when writing\n"
+             ++ "         -h        - display help\n"
 
 mode = InWindow "Boids" (800,600) (20,20)
 
-------------------------------------------------------------------------------
------------------------ Configuration ----------------------------------------
+-------------------------------------------------------------------------------
+------------------------------ Configuration ----------------------------------
 
 -- |Simulation types that the program can be started up in
 data SimulationTypes = Live             -- Live and interactive simulation

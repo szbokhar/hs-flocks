@@ -35,3 +35,15 @@ restrictDir dir r vec
             | otherwise                         = (abs vec)*lr
         hed = norm dir
         rd = r*pi/180
+
+-- Compute the repulsion force from a close neighbour
+computeRepulsion crowdR (low, high) myPos otherPos
+    | s' mag > crowdR   = V 0 0
+    | otherwise         = setMag (mag*(low-high)/(S crowdR)+high) vec
+  where vec = (v myPos)-(v otherPos)
+        mag = abs vec
+
+-- Compute the cohesion for a bird's velocity
+computeCohesion p v1 v2 = v (m*(cos theta),m*(sin theta))
+  where m       = s' $ abs v1
+        theta   = (\(V x y) -> atan2 y x) $ p*(norm v1) + (1-p)*(norm v2)
