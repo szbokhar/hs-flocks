@@ -1,66 +1,60 @@
 module Main where
 
-import Control.Applicative                      ( (<$>) )
-import Control.DeepSeq                          ( deepseq )
-import Control.Monad                            ( forM_, foldM_  )
+import Control.Monad                            ( foldM_  )
 import Data.Maybe                               ( isNothing, fromJust )
 import Graphics.Gloss.Interface.IO.Game         ( playIO )
 import Graphics.Gloss.Interface.Pure.Simulate   ( simulate, white
-                                                , Picture( Pictures )
                                                 , Display( InWindow ) )
 import System.Environment                       ( getArgs )
 
 import qualified System.IO as F
 
-import Animal       ( Flock(), makeFlock )
+import Animal       ( makeFlock )
 import Simulate     ( Drawable(..), Simulate(..) )
-import Utilities    ( int )
+import Utilities    ( int, (|>) )
 
 mode = InWindow "Boids" (800,600) (20,20)
 
 -- |Main function
 main = do
-    config <- parseArguments <$> getArgs
+    config <- getArgs |> parseArguments
+    initFlock <- makeFlock (800,600) (4,20) 0.5 (birdCount config)
+                           0.1 3 5
 
-    case (simType config) of
-        Live            -> runLiveSimulation config
-        WriteToFile     -> writeSimulationToFile config
-        ReadFromFile    -> readSimulation config
+    case simType config of
+        Live            -> runLiveSimulation initFlock
+        WriteToFile     -> writeSimulationToFile config initFlock
+        ReadFromFile    -> readSimulation config initFlock
         Help            -> showHelpMessage
   where
-    runLiveSimulation config = do
-        initFlock <- defaultSim :: IO Flock
+    runLiveSimulation initFlock =
         playIO mode white 30 initFlock
             (return . draw)
             (\a b -> return $ react a b)
             updateIO
 
-    writeSimulationToFile config = do
+    writeSimulationToFile config initSim = do
         -- Find writing target
         target <- if isNothing (file config)
                   then return F.stdout
                   else F.openFile (fromJust (file config)) F.WriteMode
-        -- Initialize bird flock
-        initFlock <- defaultSim :: IO Flock
         -- Run simulation for specified number of setps
         foldM_ (\fl i -> do
-            putStrLn $ "Computing frame " ++ (show i)
+            putStrLn $ "Computing frame " ++ show i
             F.hPutStrLn target (toWritableString fl)
             updateIO 0 fl
-            ) initFlock [1..(simulationSteps config)]
+            ) initSim [1..(simulationSteps config)]
         -- Close file
         F.hClose target
 
-    readSimulation config = do
+    readSimulation config dummy = do
         -- Find reading target
         target <- if isNothing (file config)
                  then return F.stdin
                  else F.openFile (fromJust (file config)) F.ReadMode
 
-        dummy <- defaultSim :: IO Flock
-
         -- Parse input source into list of simulation steps
-        simData <- lines <$> F.hGetContents target
+        simData <- F.hGetContents target |> lines
         simDataPictures <- renderStringIO dummy simData
 
         -- Play simulation

@@ -50,12 +50,12 @@ data DynamicsConstants =
 -- |Allow a Bird to be fully evaluated with deepseq
 instance NFData Bird where
     rnf (Bird {..}) = foldl' seq ()
-        $ [rnf position, rnf velocity, rnf size, rnf maxspeed, rnf turnRange]
+        [rnf position, rnf velocity, rnf size, rnf maxspeed, rnf turnRange]
 
 -- |Allow a Flock of NFData to be fully evaluated with deepseq
 instance NFData Flock where
     rnf (Flock {..}) = foldl' seq ()
-        $ [rnf population, rnf target, rnf field, rnf neighbourhood]
+        [rnf population, rnf target, rnf field, rnf neighbourhood]
 
 
 -------------------------------------------------------------------------------

@@ -84,5 +84,5 @@ s' :: Vec2F -> Float
 s' (S a) = a
 s' _ = error "Not a scalar"
 
-
+(|>) a b = fmap b a
 
