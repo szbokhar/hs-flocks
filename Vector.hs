@@ -43,7 +43,8 @@ instance Fractional Vec2F where
     -- |Division operator. Simple element-wise division.
     (/) (V x y) (S s) = V (x/s) (y/s)
     (/) (S s1) (S s2) = S (s1/s2)
-    (/) s@(S _) v@(V _ _) = error $ "Cannot divide " ++ show s ++ " by " ++ show v
+    (/) s@(S _) v@(V _ _) =
+        error $ "Cannot divide " ++ show s ++ " by " ++ show v
     (/) v1@(V _ _) v2@(V _ _) =
         error $ "Cannot divide " ++ show v1 ++ " by " ++ show v2
 

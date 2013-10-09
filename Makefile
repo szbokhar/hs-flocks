@@ -5,8 +5,7 @@ build:
 	ghc --make -O3 -W Main.hs -o FlockSimulation
 
 clean:
-	rm *.hi *.o FlockSilumation
-	rm -rf doc
+	rm -rf *.hi *.o FlockSimulation doc
 
 doc:
 	haddock Main.hs -h -o doc
