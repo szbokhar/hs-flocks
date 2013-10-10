@@ -2,7 +2,8 @@
 
 module Utilities where
 
-import Data.List                        ( foldl' )
+import Data.List                        ( foldl', takeWhile )
+import qualified Data.Map as M
 import Graphics.Gloss ( Point )
 
 import Vector
@@ -22,11 +23,36 @@ neighbours rad posF velF= foldl' (add []) []
                 --_ = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
                 --_ = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
 
+{-
+neighbours' :: Float             -- ^Neighbourhood radius
+            -> (Float, Float)    -- ^Width and height of the area
+            -> (a->Point)        -- ^Position function
+            -> (a->Point)        -- ^Velocity function
+            -> [a]               -- ^List of items
+            -> [(a,[a])]         -- ^List of item and neighbours within radius
+            -}
+neighbours' rad (w,h) posF velF xs = M.map length $ fst $ foldl' placeItem (M.empty,[]) xs
+  where (lx, hx, ly, hy) = (-w/2, w/2, -h/2, h/2)
+        (gridx, gridy) = ([lx,lx+rad..hx], [ly,ly+rad..hy])
+
+        placeItem (gridMap,itemsAndLocations) item@(posF->(x,y)) =
+            (M.insertWith' (++) key [item] gridMap, (item,key):itemsAndLocations)
+           where key = ( length $ takeWhile (x>) gridx
+                       , length $ takeWhile (y>) gridy)
+
+
 -- |Wrap the birds within the boundery
 wrapBird :: (a -> Point) -> (a -> Point -> a) -> (Float, Float) -> a -> a
 wrapBird posF setPosF (w,h) item = setPosF item (wrap x bx, wrap y by)
   where (x,y) = posF item
         (bx,by) = (w/2,h/2)
+        wrap val bound  | abs val > bound   = val - 2 * signum val * bound
+                        | otherwise         = val
+
+-- |Wrap the birds within the boundery
+wrapPos :: (Float, Float) -> Point -> Point
+wrapPos (w,h) (x,y) = (wrap x bx, wrap y by)
+  where (bx,by) = (w/2,h/2)
         wrap val bound  | abs val > bound   = val - 2 * signum val * bound
                         | otherwise         = val
 

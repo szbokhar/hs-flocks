@@ -18,8 +18,8 @@ mode = InWindow "Boids" (800,600) (20,20)
 -- |Main function
 main = do
     config <- getArgs |> parseArguments
-    initFlock <- makeFlock (800,600) (4,20) 0.5 (birdCount config)
-                           0.1 3 5
+    initFlock <- makeFlock (800,600) (4,9) 1 (birdCount config)
+                           0.2 2 5
 
     case simType config of
         Live            -> runLiveSimulation initFlock

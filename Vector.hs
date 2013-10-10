@@ -106,4 +106,4 @@ vmap f (V x y) = V (f x) (f y)
 
 -- |Sets the magnitude of a vector
 setMag :: Vec2F -> Vec2F -> Vec2F
-setMag m v = m * (norm v)
+setMag m v = m * norm v

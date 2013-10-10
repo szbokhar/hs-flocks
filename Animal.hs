@@ -11,8 +11,7 @@ import Graphics.Gloss.Interface.IO.Game
 import System.Random
 
 import Simulate
-import Utilities    ( v, p, computeCohesion, computeRepulsion
-                    , restrictDir, restrictMag, neighbours )
+import Utilities
 import Vector       ( Vec2F(..), setMag )
 -------------------------------------------------------------------------------
 ----------------------------- Datatype Definitions ----------------------------
@@ -85,10 +84,11 @@ instance Simulate Flock where
     -- |Update the flock by one timestep
     updateIO _ f@(Flock {..}) = do
         pop' <-  mapM move' closeBirds
+        print $ neighbours' visionR field position velocity population
         return $ f { population = pop' }
       where closeBirds = neighbours visionR position velocity population
             move' = moveBird target constants
-            DC { neighbourhood=(_,visionR) } = constants
+            DC { neighbourhood=(_,visionR), field=field} = constants
 
     -- |Converts a flock to a consice writable form
     toWritableString (Flock { population = birds }) =
@@ -127,7 +127,7 @@ moveBird :: Point                   -- ^Target point that bird is drawn to
          -> (Bird, [Bird])          -- ^Bird to update and a list of neighbours
          -> IO Bird                 -- ^Updated bird
 moveBird (v->goal) consts (bird,birds) =
-    return bird { position = p pos'       -- Update the position
+    return bird { position = wrapPos (w,h) (p pos')       -- Update the position
                 , velocity = p vel' }     -- and velocity of the bird
   where
     -- Convienent identifiers
@@ -149,14 +149,17 @@ moveBird (v->goal) consts (bird,birds) =
 
     -- Velocity from resultant forces
     fvel = restrictDir vel r
-         $ restrictMag maxspd (0.5 * (vel 
+         $ restrictMag maxspd (0.5 * (vel
          + restrictMag maxspd (vel + totalForce)))
     -- Average velocity from neighbour birds
     nvel = foldl' (\a b -> a + v (velocity b)) fvel birds / (1+numNeighbours)
 
     -- Total force that affects the bird's motion
-    totalForce = neighbourForce birds + crowdForce + goalForce + borderForce
-               - 0.05*vel - V 0 1
+    totalForce = neighbourForce birds
+               + crowdForce
+               + goalForce
+               + borderForce
+             --  - 0.05*vel
     -- Foce drawing the bird towards the target (mouse)
     goalForce = setMag (S tF) (goal-pos)
     -- Force that pushes the bird away from close neighbours
