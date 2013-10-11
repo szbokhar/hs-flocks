@@ -1,0 +1,290 @@
+	Fri Oct 11 01:07 2013 Time and Allocation Profiling Report  (Final)
+
+	   FlockSimulation +RTS -p -RTS
+
+	total time  =       57.81 secs   (57813 ticks @ 1000 us, 1 processor)
+	total alloc = 27,807,663,256 bytes  (excludes profiling overheads)
+
+COST CENTRE                       MODULE    %time %alloc
+
+*                                 Vector     12.7   15.7
++                                 Vector     12.5   16.1
+neighbours'.findNeighbours.helper Utilities  11.0   12.8
+negate                            Vector      7.5    7.5
+toWritableString                  Animal      6.9    8.4
+abs                               Vector      5.2    7.1
+computeRepulsion                  Utilities   4.2    4.9
+position                          Animal      3.8    0.0
+moveBird.crowdForce               Animal      3.5    3.5
+toVec                             Vector      3.1    3.6
+neighbours'.findNeighbours.pos'   Utilities   2.8    3.0
+neighbours'.findNeighbours        Utilities   2.3    2.7
+moveBird.neighbourForce           Animal      2.1    3.0
+sndMap.\                          Utilities   1.7    2.8
+<                                 Vector      1.7    0.0
+abs.(...)                         Vector      1.7    0.0
+neighbours'.eligibleList.\        Utilities   1.6    0.1
+signum                            Vector      1.2    1.6
+computeRepulsion.vec              Utilities   1.2    0.6
+neighbours'.adjacentCells.\       Utilities   1.1    0.8
+
+
+                                                                                                individual     inherited
+COST CENTRE                                MODULE                             no.     entries  %time %alloc   %time %alloc
+
+MAIN                                       MAIN                                60           0    0.0    0.0   100.0  100.0
+ CAF                                       Main                               119           0    0.0    0.0   100.0  100.0
+  defaultConfig                            Main                               125           1    0.0    0.0     0.0    0.0
+  main                                     Main                               120           1    0.0    0.0   100.0  100.0
+   main.writeSimulationToFile              Main                               128           1    0.0    0.0   100.0  100.0
+    main.writeSimulationToFile.\           Main                               131         100    0.5    0.0   100.0  100.0
+     updateIO                              Animal                             134         100    0.1    0.1    92.5   91.6
+      updateIO.visionR                     Animal                             199          99    0.0    0.0     0.0    0.0
+      updateIO.move'                       Animal                             145         100    0.0    0.0    41.8   42.0
+       moveBird                            Animal                             146      100000    0.9    0.5    41.8   42.0
+        moveBird.nvel                      Animal                             326       99000    0.6    0.1     3.4    3.6
+         fromInteger                       Vector                             333       99000    0.1    0.0     0.1    0.0
+         +                                 Vector                             332       99000    0.0    0.0     0.0    0.0
+         moveBird.nvel.\                   Animal                             328     4992534    0.7    0.9     2.6    3.4
+          velocity                         Animal                             331     4992534    0.5    0.0     0.5    0.0
+          toVec                            Vector                             330     4992534    0.3    0.4     0.3    0.4
+          +                                Vector                             329     4992534    1.1    2.2     1.1    2.2
+         /                                 Vector                             327       99000    0.1    0.0     0.1    0.0
+        moveBird.r                         Animal                             306       98999    0.0    0.0     0.0    0.0
+        moveBird.maxspd                    Animal                             304       99000    0.0    0.0     0.0    0.0
+        moveBird.tF                        Animal                             300       99000    0.0    0.0     0.0    0.0
+        moveBird.cF                        Animal                             296       98998    0.0    0.0     0.0    0.0
+        moveBird.nF                        Animal                             292       99000    0.0    0.0     0.0    0.0
+        moveBird.w                         Animal                             277       99000    0.0    0.0     0.0    0.0
+        moveBird.visionR                   Animal                             276       99000    0.0    0.0     0.0    0.0
+        moveBird.h                         Animal                             275       99000    0.0    0.0     0.0    0.0
+        moveBird.borderForce               Animal                             259       99000    0.6    0.5     2.2    1.8
+         moveBird.borderForce.yy           Animal                             278       99000    0.0    0.0     0.0    0.0
+         moveBird.borderForce.(...)        Animal                             274       99000    0.0    0.0     0.0    0.0
+         moveBird.borderForce.xx           Animal                             273       99000    0.0    0.0     0.0    0.0
+         computeRepulsion                  Utilities                          263      396000    0.2    0.2     1.2    1.1
+          negate                           Vector                             284       19098    0.0    0.0     0.0    0.0
+          *                                Vector                             283       19098    0.0    0.0     0.0    0.0
+          /                                Vector                             282       19098    0.0    0.0     0.0    0.0
+          +                                Vector                             281       38196    0.0    0.0     0.0    0.0
+          setMag                           Vector                             279       19098    0.0    0.0     0.0    0.0
+           signum                          Vector                             285       19098    0.0    0.0     0.0    0.0
+            signum.m                       Vector                             301       19098    0.0    0.0     0.0    0.0
+             signum.m.\                    Vector                             303       19098    0.0    0.0     0.0    0.0
+             *                             Vector                             302       19098    0.0    0.0     0.0    0.0
+           *                               Vector                             280       19098    0.0    0.0     0.0    0.0
+          computeRepulsion.vec             Utilities                          267      396000    0.1    0.0     0.4    0.4
+           negate                          Vector                             269      396000    0.2    0.1     0.2    0.1
+           +                               Vector                             268      396000    0.2    0.2     0.2    0.2
+          computeRepulsion.mag             Utilities                          265      396000    0.0    0.0     0.4    0.4
+           abs                             Vector                             266      396000    0.1    0.1     0.4    0.4
+            abs.(...)                      Vector                             271      396000    0.0    0.0     0.3    0.3
+             *                             Vector                             272      396000    0.2    0.3     0.2    0.3
+            abs.m                          Vector                             270      396000    0.0    0.0     0.0    0.0
+          s'                               Utilities                          264      396000    0.0    0.0     0.0    0.0
+         fromInteger                       Vector                             262       99000    0.0    0.0     0.0    0.0
+         +                                 Vector                             261      396000    0.2    0.2     0.2    0.2
+         moveBird.borderForce.locs         Animal                             260       99000    0.1    0.1     0.1    0.1
+        toVec                              Vector                             257       99000    0.0    0.0     0.0    0.0
+        moveBird.goalForce                 Animal                             252       99000    0.1    0.0     0.3    0.3
+         negate                            Vector                             258       99000    0.0    0.0     0.0    0.0
+         +                                 Vector                             256       99000    0.1    0.0     0.1    0.0
+         setMag                            Vector                             253       99000    0.0    0.0     0.2    0.2
+          signum                           Vector                             255       99000    0.1    0.1     0.1    0.1
+           signum.m                        Vector                             297       99000    0.0    0.0     0.1    0.1
+            signum.m.\                     Vector                             299       99000    0.0    0.0     0.0    0.0
+            *                              Vector                             298       99000    0.0    0.1     0.0    0.1
+          *                                Vector                             254       99000    0.0    0.0     0.0    0.0
+        moveBird.(...)                     Animal                             244       99000    0.0    0.0     0.0    0.0
+        moveBird.crowdR                    Animal                             243       99000    0.0    0.0     0.0    0.0
+        moveBird.crowdForce                Animal                             228       99000    3.5    3.5    24.6   27.1
+         position                          Animal                             239     4992534    0.5    0.0     0.5    0.0
+         toVec                             Vector                             238     4992534    0.3    0.4     0.3    0.4
+         computeRepulsion                  Utilities                          231     4992534    4.0    4.6    18.8   21.0
+          negate                           Vector                             250     2254554    0.4    0.5     0.4    0.5
+          *                                Vector                             249     2254554    0.5    0.5     0.5    0.5
+          /                                Vector                             248     2254554    0.5    0.5     0.5    0.5
+          +                                Vector                             247     4509108    1.0    1.0     1.0    1.0
+          setMag                           Vector                             245     2254554    0.4    0.2     3.4    4.2
+           signum                          Vector                             251     2254554    0.8    1.2     2.3    3.0
+            signum.m                       Vector                             293     2254554    0.3    0.3     1.5    1.9
+             signum.m.\                    Vector                             295     2254554    0.2    0.1     0.2    0.1
+             *                             Vector                             294     2254554    1.0    1.4     1.0    1.4
+           *                               Vector                             246     2254554    0.7    1.0     0.7    1.0
+          computeRepulsion.vec             Utilities                          235     4992534    1.1    0.6     4.3    4.6
+           negate                          Vector                             237     4992534    1.5    1.9     1.5    1.9
+           +                               Vector                             236     4992534    1.7    2.2     1.7    2.2
+          computeRepulsion.mag             Utilities                          233     4992534    0.4    0.0     4.7    5.0
+           abs                             Vector                             234     4992534    1.4    1.9     4.3    5.0
+            abs.(...)                      Vector                             241     4992534    0.4    0.0     2.8    3.2
+             *                             Vector                             242     4992534    2.4    3.2     2.4    3.2
+            abs.m                          Vector                             240     4992534    0.1    0.0     0.1    0.0
+          s'                               Utilities                          232     4992534    0.1    0.0     0.1    0.0
+         fromInteger                       Vector                             230       99000    0.0    0.0     0.0    0.0
+         +                                 Vector                             229     4992534    1.6    2.2     1.6    2.2
+        moveBird.numNeighbours             Animal                             225       99000    0.3    0.1     0.3    0.1
+         fromInteger                       Vector                             226       99000    0.0    0.0     0.0    0.0
+        moveBird.totalForce                Animal                             191       99000    0.0    0.1     4.9    6.1
+         moveBird.neighbourForce           Animal                             193       99000    2.1    3.0     4.7    5.9
+          negate                           Vector                             227       99000    0.1    0.0     0.1    0.0
+          position                         Animal                             224     4992534    0.3    0.0     0.3    0.0
+          toVec                            Vector                             223     4992534    0.2    0.4     0.2    0.4
+          fromInteger                      Vector                             222       99000    0.1    0.0     0.1    0.0
+          /                                Vector                             221       99000    0.1    0.0     0.1    0.0
+          +                                Vector                             220     5091534    1.5    2.2     1.5    2.2
+          setMag                           Vector                             217       99000    0.0    0.0     0.3    0.2
+           signum                          Vector                             219       99000    0.1    0.1     0.2    0.1
+            signum.m                       Vector                             289       99000    0.1    0.0     0.1    0.1
+             signum.m.\                    Vector                             291       99000    0.0    0.0     0.0    0.0
+             *                             Vector                             290       99000    0.1    0.1     0.1    0.1
+           *                               Vector                             218       99000    0.1    0.0     0.1    0.0
+         +                                 Vector                             192      297000    0.2    0.1     0.2    0.1
+        moveBird.velP                      Animal                             170       99000    0.0    0.0     0.0    0.0
+        moveBird.vel                       Animal                             168       99000    0.0    0.0     0.0    0.0
+         toVec                             Vector                             169       99000    0.0    0.0     0.0    0.0
+        moveBird.fvel                      Animal                             164       99000    0.2    0.1     3.0    1.5
+         +                                 Vector                             190      198000    0.1    0.1     0.1    0.1
+         fromRational                      Vector                             189       99000    0.2    0.0     0.2    0.0
+         *                                 Vector                             188       99000    0.1    0.0     0.1    0.0
+         restrictMag                       Utilities                          185      198000    0.1    0.0     0.5    0.3
+          setMag                           Vector                             356       24263    0.0    0.0     0.0    0.0
+           signum                          Vector                             358       24263    0.0    0.0     0.0    0.0
+            signum.m                       Vector                             359       24263    0.0    0.0     0.0    0.0
+             signum.m.\                    Vector                             361       24263    0.0    0.0     0.0    0.0
+             *                             Vector                             360       24263    0.0    0.0     0.0    0.0
+           *                               Vector                             357       24263    0.0    0.0     0.0    0.0
+          abs                              Vector                             187      198000    0.1    0.1     0.3    0.2
+           abs.(...)                       Vector                             287      198000    0.0    0.0     0.1    0.1
+            *                              Vector                             288      198000    0.1    0.1     0.1    0.1
+           abs.m                           Vector                             286      198000    0.0    0.0     0.0    0.0
+          >                                Vector                             186      198000    0.1    0.0     0.1    0.0
+         restrictDir                       Utilities                          165       99000    0.2    0.1     1.9    1.0
+          restrictDir.rr                   Utilities                          350       26013    0.0    0.0     0.2    0.1
+           rotateVec                       Vector                             352       26013    0.1    0.0     0.1    0.0
+           signum                          Vector                             351       26013    0.0    0.0     0.1    0.0
+            signum.m                       Vector                             353       26013    0.0    0.0     0.0    0.0
+             signum.m.\                    Vector                             355       26013    0.0    0.0     0.0    0.0
+             *                             Vector                             354       26013    0.0    0.0     0.0    0.0
+          restrictDir.lr                   Utilities                          316       24660    0.0    0.0     0.2    0.1
+           rotateVec                       Vector                             318       24660    0.1    0.0     0.1    0.0
+           signum                          Vector                             317       24660    0.0    0.0     0.1    0.0
+            signum.m                       Vector                             335       24660    0.0    0.0     0.0    0.0
+             signum.m.\                    Vector                             337       24660    0.0    0.0     0.0    0.0
+             *                             Vector                             336       24660    0.0    0.0     0.0    0.0
+          restrictDir.rd                   Utilities                          305       98999    0.1    0.0     0.1    0.0
+          restrictDir.hed                  Utilities                          181       98999    0.0    0.0     0.2    0.1
+           signum                          Vector                             183       98999    0.1    0.1     0.2    0.1
+            signum.m                       Vector                             307       98999    0.0    0.0     0.1    0.1
+             signum.m.\                    Vector                             309       98999    0.0    0.0     0.0    0.0
+             *                             Vector                             308       98999    0.1    0.1     0.1    0.1
+          restrictDir.vec'                 Utilities                          175       98999    0.2    0.1     0.8    0.5
+           abs                             Vector                             315       50673    0.0    0.0     0.1    0.1
+            abs.(...)                      Vector                             339       50673    0.0    0.0     0.0    0.0
+             *                             Vector                             340       50673    0.0    0.0     0.0    0.0
+            abs.m                          Vector                             338       50673    0.0    0.0     0.0    0.0
+           fromInteger                     Vector                             314       50673    0.0    0.0     0.0    0.0
+           cross                           Vector                             313       50673    0.0    0.0     0.0    0.0
+           signum                          Vector                             184      149672    0.1    0.1     0.2    0.2
+            signum.m                       Vector                             310      149672    0.0    0.0     0.1    0.1
+             signum.m.\                    Vector                             312      149672    0.0    0.0     0.0    0.0
+             *                             Vector                             311      149672    0.1    0.1     0.1    0.1
+           *                               Vector                             180      149672    0.1    0.1     0.1    0.1
+           acos                            Vector                             178           0    0.0    0.0     0.1    0.0
+            vmap                           Vector                             179       98999    0.1    0.0     0.1    0.0
+           >                               Vector                             176      149672    0.1    0.0     0.1    0.0
+          abs                              Vector                             167       99000    0.1    0.0     0.2    0.1
+           abs.(...)                       Vector                             173       99000    0.0    0.0     0.1    0.1
+            *                              Vector                             174       99000    0.1    0.1     0.1    0.1
+           abs.m                           Vector                             172       99000    0.0    0.0     0.0    0.0
+          <                                Vector                             166       99000    0.0    0.0     0.0    0.0
+        moveBird.vel'                      Animal                             159       99000    0.0    0.0     1.3    0.8
+         computeCohesion                   Utilities                          160       99000    0.2    0.1     1.3    0.8
+          computeCohesion.theta            Utilities                          320       99000    0.2    0.1     0.9    0.6
+           computeCohesion.theta.\         Utilities                          334       99000    0.1    0.0     0.1    0.0
+           negate                          Vector                             325       99000    0.0    0.0     0.0    0.0
+           fromInteger                     Vector                             324       99000    0.0    0.0     0.0    0.0
+           signum                          Vector                             323      198000    0.1    0.1     0.3    0.3
+            signum.m                       Vector                             341      198000    0.0    0.0     0.2    0.2
+             signum.m.\                    Vector                             343      198000    0.0    0.0     0.0    0.0
+             *                             Vector                             342      198000    0.1    0.1     0.1    0.1
+           *                               Vector                             322      198000    0.1    0.1     0.1    0.1
+           +                               Vector                             321      198000    0.1    0.1     0.1    0.1
+          computeCohesion.m                Utilities                          162       99000    0.0    0.0     0.1    0.1
+           abs                             Vector                             163       99000    0.0    0.0     0.1    0.1
+            abs.(...)                      Vector                             345       99000    0.0    0.0     0.1    0.1
+             *                             Vector                             346       99000    0.1    0.1     0.1    0.1
+            abs.m                          Vector                             344       99000    0.0    0.0     0.0    0.0
+          *                                Vector                             161       99000    0.1    0.0     0.1    0.0
+        moveBird.(...)                     Animal                             158       99000    0.0    0.0     0.0    0.0
+        moveBird.posP                      Animal                             157       99000    0.0    0.0     0.0    0.0
+        moveBird.pos                       Animal                             154       99000    0.0    0.0     0.1    0.0
+         toVec                             Vector                             156       99000    0.0    0.0     0.0    0.0
+        moveBird.pos'                      Animal                             152       99000    0.0    0.0     0.1    0.0
+         +                                 Vector                             153       99000    0.1    0.0     0.1    0.0
+        toPoint                            Vector                             151      198000    0.0    0.0     0.0    0.0
+        wrapPos                            Utilities                          149       99000    0.2    0.1     0.5    0.2
+         wrapPos.by                        Utilities                          349       99000    0.0    0.0     0.0    0.0
+         wrapPos.(...)                     Utilities                          348       99000    0.1    0.0     0.1    0.0
+         wrapPos.bx                        Utilities                          347       99000    0.0    0.0     0.0    0.0
+         wrapPos.wrap                      Utilities                          319      198000    0.2    0.0     0.2    0.0
+      updateIO.(...)                       Animal                             138         100    0.0    0.0     0.0    0.0
+      updateIO.field                       Animal                             137         100    0.0    0.0     0.0    0.0
+      updateIO.closeBirds                  Animal                             135         100    0.0    0.0    50.6   49.5
+       neighbours'                         Utilities                          136         100    0.0    0.0    50.6   49.5
+        neighbours'.buckets                Utilities                          205          99    0.0    0.0     0.0    0.0
+        neighbours'.gy                     Utilities                          203          99    0.0    0.0     0.0    0.0
+        neighbours'.(...)                  Utilities                          202          99    0.0    0.0     0.0    0.0
+        neighbours'.gx                     Utilities                          201          99    0.0    0.0     0.0    0.0
+        neighbours'.yslots                 Utilities                          200          99    0.0    0.0     0.0    0.0
+        neighbours'.(...)                  Utilities                          198          99    0.0    0.0     0.0    0.0
+        neighbours'.xslots                 Utilities                          197          99    0.0    0.0     0.0    0.0
+        neighbours'.findNeighbours         Utilities                          147      100000    2.3    2.7    44.8   44.5
+         neighbours'.findNeighbours.helper Utilities                          206    13199320   11.0   12.8    42.4   41.9
+          negate                           Vector                             213    13100320    5.4    4.9     5.4    4.9
+          neighbours'.findNeighbours.pos'  Utilities                          210    26200640    2.8    3.0     8.1    5.3
+           position                        Animal                             212    26200640    3.0    0.0     3.0    0.0
+           toVec                           Vector                             211    26200640    2.3    2.3     2.3    2.3
+          +                                Vector                             209    13100320    4.7    5.7     4.7    5.7
+          abs                              Vector                             208    13100320    3.4    4.9    11.6   13.2
+           abs.(...)                       Vector                             215    13100320    1.2    0.0     7.9    8.3
+            *                              Vector                             216    13100320    6.7    8.3     6.7    8.3
+           abs.m                           Vector                             214    13100320    0.3    0.0     0.3    0.0
+          <                                Vector                             207    13100320    1.7    0.0     1.7    0.0
+        neighbours'.(...)                  Utilities                          142         100    0.0    0.1     0.6    0.5
+         neighbours'.placeItem             Utilities                          143      100000    0.3    0.2     0.5    0.5
+          neighbours'.placeItem.key        Utilities                          195       99000    0.3    0.3     0.3    0.3
+          position                         Animal                             144      100000    0.0    0.0     0.0    0.0
+        neighbours'.items                  Utilities                          141         100    0.0    0.0     0.0    0.0
+        neighbours'.eligibleList           Utilities                          139         100    0.0    0.0     5.3    4.4
+         sndMap                            Utilities                          140         100    0.0    0.1     5.3    4.4
+          sndMap.\                         Utilities                          148      100000    1.7    2.8     5.2    4.4
+           neighbours'.eligibleList.\      Utilities                          204      839029    1.6    0.1     1.6    0.1
+           neighbours'.adjacentCells       Utilities                          194       99000    0.8    0.7     1.9    1.5
+            neighbours'.adjacentCells.\    Utilities                          196      891000    1.1    0.8     1.1    0.8
+     toWritableString                      Animal                             132         100    6.9    8.4     7.0    8.4
+      toWritableString.makeTup             Animal                             133      100000    0.0    0.0     0.0    0.0
+    simulationSteps                        Main                               130           1    0.0    0.0     0.0    0.0
+    file                                   Main                               129           2    0.0    0.0     0.0    0.0
+   simType                                 Main                               127           1    0.0    0.0     0.0    0.0
+   birdCount                               Main                               123           1    0.0    0.0     0.0    0.0
+   makeFlock                               Animal                             122           1    0.0    0.0     0.0    0.0
+    makeFlock.\                            Animal                             126        1000    0.0    0.0     0.0    0.0
+   |>                                      Utilities                          121           1    0.0    0.0     0.0    0.0
+    parseArguments                         Main                               124           1    0.0    0.0     0.0    0.0
+ CAF                                       Animal                             118           0    0.0    0.0     0.0    0.0
+ CAF                                       Utilities                          116           0    0.0    0.0     0.0    0.0
+  s                                        Utilities                          171           1    0.0    0.0     0.0    0.0
+  v                                        Utilities                          155           1    0.0    0.0     0.0    0.0
+  p                                        Utilities                          150           1    0.0    0.0     0.0    0.0
+ CAF                                       Vector                             115           0    0.0    0.0     0.0    0.0
+  norm                                     Vector                             182           1    0.0    0.0     0.0    0.0
+  acos                                     Vector                             177           1    0.0    0.0     0.0    0.0
+ CAF                                       System.Random                      114           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.Conc.Signal                    110           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.Float                          105           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.IO.Encoding                    101           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.IO.Encoding.Iconv               99           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.IO.FD                           94           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.IO.Handle.FD                    92           0    0.0    0.0     0.0    0.0
+ CAF                                       System.CPUTime                      79           0    0.0    0.0     0.0    0.0
+ CAF                                       GHC.Integer.Logarithms.Internals    68           0    0.0    0.0     0.0    0.0
