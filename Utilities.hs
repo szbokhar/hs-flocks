@@ -23,23 +23,31 @@ neighbours rad posF velF= foldl' (add []) []
                 --_ = (pi/2) < (acos $ (norm v1) * (norm $ p2-p1))
                 --_ = (pi/2) < (acos $ (norm v2) * (norm $ p1-p2))
 
-{-
-neighbours' :: Float             -- ^Neighbourhood radius
+
+neighbours' :: Eq a => Float             -- ^Neighbourhood radius
             -> (Float, Float)    -- ^Width and height of the area
             -> (a->Point)        -- ^Position function
             -> (a->Point)        -- ^Velocity function
             -> [a]               -- ^List of items
             -> [(a,[a])]         -- ^List of item and neighbours within radius
-            -}
-neighbours' rad (w,h) posF velF xs = M.map length $ fst $ foldl' placeItem (M.empty,[]) xs
-  where (lx, hx, ly, hy) = (-w/2, w/2, -h/2, h/2)
-        (gridx, gridy) = ([lx,lx+rad..hx], [ly,ly+rad..hy])
+neighbours' rad (w,h) posF velF xs = map findNeighbours eligibleList
+  where (xslots, yslots) = ([-w/2,-w/2+rad..w/2], [-h/2,-h/2+rad..h/2])
+        (gx,gy) = (length xslots-1, length yslots-1)
+        (buckets,items) = foldl' placeItem (M.empty,[]) (zip [1..] xs)
 
-        placeItem (gridMap,itemsAndLocations) item@(posF->(x,y)) =
+        findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
+          where helper (j,a) = (i /= j) && abs (pos' x - pos' a) < S rad
+                pos' c = v $ posF c
+
+        adjacentCells (x,y) = filter (\(x,y) -> not $ x < 1 || y < 1 || x > gx || y > gy)
+                                [(a,b) | a<-[x-1,x,x+1], b<-[y-1,y,y+1] ]
+
+        eligibleList = sndMap (concatMap (\a -> M.findWithDefault [] a buckets) . adjacentCells) items
+
+        placeItem (gridMap,itemsAndLocations) item@((_,posF->(x,y))) =
             (M.insertWith' (++) key [item] gridMap, (item,key):itemsAndLocations)
-           where key = ( length $ takeWhile (x>) gridx
-                       , length $ takeWhile (y>) gridy)
-
+           where key = ( length $ takeWhile (x>) xslots
+                       , length $ takeWhile (y>) yslots)
 
 -- |Wrap the birds within the boundery
 wrapBird :: (a -> Point) -> (a -> Point -> a) -> (Float, Float) -> a -> a
@@ -111,3 +119,5 @@ s' (S a) = a
 s' _ = error "Not a scalar"
 
 (|>) a b = fmap b a
+
+sndMap f = map (\(a,b) -> (a,f b))

@@ -84,9 +84,9 @@ instance Simulate Flock where
     -- |Update the flock by one timestep
     updateIO _ f@(Flock {..}) = do
         pop' <-  mapM move' closeBirds
-        print $ neighbours' visionR field position velocity population
+        --print $ neighbours' visionR field position velocity population
         return $ f { population = pop' }
-      where closeBirds = neighbours visionR position velocity population
+      where closeBirds = neighbours' visionR field position velocity population
             move' = moveBird target constants
             DC { neighbourhood=(_,visionR), field=field} = constants
 
