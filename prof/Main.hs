@@ -66,7 +66,7 @@ data Config =
   deriving (Show, Read, Eq)
 
 -- |Default configuration for the program run without any commandline arguments
-defaultConfig = Config 1000 WriteToFile 100 (Just "boid.txt")
+defaultConfig = Config 1000 WriteToFile 10 (Just "boid.txt")
 
 -- |Parse commandline arguments into a config
 parseArguments :: [String] -> Config

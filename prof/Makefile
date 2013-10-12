@@ -4,6 +4,9 @@ all: build
 build:
 	ghc --make -O3 -W Main.hs -o FlockSimulation
 
+profile:
+	ghc -prof -auto-all -O3 Main.hs -o FlockSimulation
+
 clean:
 	rm -rf *.hi *.o FlockSimulation doc
 

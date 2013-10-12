@@ -1,7 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 import Graphics.Gloss
-import qualified Data.Map as M
+import Data.Array
 import Data.List
 import Vector
 import Control.Monad
@@ -25,28 +25,33 @@ drawPoints = map (\(x,y) -> translate x y $ color blue $ circleSolid 3)
 drawNet list = Pictures $ concatMap (\(it,xs)-> map (\a -> line [it,a]) xs) list
                   ++ drawPoints (map fst list)
 
-{-
-neighbours' :: Float             -- ^Neighbourhood radius
-            -> (Float, Float)    -- ^Width and height of the area
-            -> (a->Point)        -- ^Position function
-            -> (a->Point)        -- ^Velocity function
-            -> [a]               -- ^List of items
-            -> [(a,[a])]         -- ^List of item and neighbours within radius
-            -}
-neighbours' rad (w,h) posF velF xs = map findNeighbours eligibleList
+neighbours' rad (w,h) posF velF xs = zip xs (elems finalArray)
   where (xslots, yslots) = ([-w/2,-w/2+rad..w/2], [-h/2,-h/2+rad..h/2])
-        (gx,gy) = (length xslots-1, length yslots-1)
-        (buckets,items) = foldl' placeItem (M.empty,[]) xs
+        sz@(gx,gy) = (length xslots-1, length yslots-1)
+        (buckets,items) = foldl' placeItem
+                                 (listArray ((1,1),sz) $ repeat [],[])
+                                 (zip [1..] xs)
+        (finalArray,_) = foldl' addBird (listArray (1,length xs) $ repeat [],buckets) items
 
-        findNeighbours (x,xs) = (x,filter (\a -> abs (v (posF x) - v (posF a)) < S rad) xs)
+        addBird (mat,buk) ((i,e1),bukPos) = (accum (flip (++)) mat matUp
+                                            ,accum (flip delete) buk [(bukPos,(i,e1))])
+          where matUp = (i,map snd neigh):[(j,[e1]) | (j,_)<-neigh]
+                neigh = filter helper elig
+                elig = concatMap (buckets!) $ adjacentCells bukPos
+                helper (j,e2) = (i /= j) && abs (pos' e1 - pos' e2) < S rad
+                pos' c = v $ posF c
+
+        findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
+          where helper (j,a) = (i /= j) && abs (pos' x - pos' a) < S rad
+                pos' c = v $ posF c
 
         adjacentCells (x,y) = filter (\(x,y) -> not $ x < 1 || y < 1 || x > gx || y > gy)
                                 [(a,b) | a<-[x-1,x,x+1], b<-[y-1,y,y+1] ]
 
-        eligibleList = sndMap (concatMap (\a -> M.findWithDefault [] a buckets) . adjacentCells) items
+        eligibleList = sndMap (concatMap (buckets!) . adjacentCells) items
 
-        placeItem (gridMap,itemsAndLocations) item@(posF->(x,y)) =
-            (M.insertWith' (++) key [item] gridMap, (item,key):itemsAndLocations)
+        placeItem (gridArray,itemsAndLocations) item@((_,posF->(x,y))) =
+            (accum (\ a b -> b:a) gridArray [(key,item)], (item,key):itemsAndLocations)
            where key = ( length $ takeWhile (x>) xslots
                        , length $ takeWhile (y>) yslots)
 

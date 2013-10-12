@@ -17,28 +17,28 @@ import Vector       ( Vec2F(..), setMag )
 
 -- |A flock of some type of creature
 data Flock =
-     Flock  { population    :: [Bird]           -- ^List of population members
-            , target        :: Point            -- ^Point all members are drawn
-            , constants     :: DynamicsConstants-- ^Dynamic constants
+     Flock  { population    :: ![Bird]           -- ^List of population members
+            , target        :: !Point            -- ^Point all members are drawn
+            , constants     :: !DynamicsConstants-- ^Dynamic constants
             }
   deriving (Read, Show, Eq)
 
 -- |A bird creature
 data Bird =
-     Bird   { position  :: Point                -- ^Position of the bird
-            , velocity  :: Point                -- ^Velocity vector of the bird
-            , size      :: Float                -- ^Size to draw the bird
-            , maxspeed  :: Float                -- ^The max speed of the bird
-            , turnRange :: Float                -- ^Max allowable turning angle
+     Bird   { position  :: !Point                -- ^Position of the bird
+            , velocity  :: !Point                -- ^Velocity vector of the bird
+            , size      :: !Float                -- ^Size to draw the bird
+            , maxspeed  :: !Float                -- ^The max speed of the bird
+            , turnRange :: !Float                -- ^Max allowable turning angle
             }
   deriving (Read, Show, Eq)
 
 data DynamicsConstants =
-     DC { targetForce       :: Float
-        , neighbourForce    :: Float
-        , crowdForce        :: Float
-        , field             :: (Float, Float)   -- ^Game field
-        , neighbourhood     :: (Float, Float)   -- ^Crowd and vision radius
+     DC { targetForce       :: !Float
+        , neighbourForce    :: !Float
+        , crowdForce        :: !Float
+        , field             :: !(Float, Float)   -- ^Game field
+        , neighbourhood     :: !(Float, Float)   -- ^Crowd and vision radius
         }
   deriving (Read, Show, Eq)
 

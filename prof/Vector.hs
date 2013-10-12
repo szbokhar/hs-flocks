@@ -2,7 +2,7 @@ module Vector where
 
 -- |Simple 2D vector datatype. Provides vector and scalar values to allow for
 --  eacy use of operators.
-data Vec2F = V Float Float | S Float
+data Vec2F = V !Float !Float | S !Float
   deriving (Show, Read, Eq, Ord)
 
 -- |Make Vec2F a number type to be able to use the operators on vectors and

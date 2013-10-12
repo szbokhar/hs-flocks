@@ -3,7 +3,7 @@
 module Utilities where
 
 import Data.List                        ( foldl', takeWhile )
-import qualified Data.Map as M
+import Data.Array
 
 import Vector
 
@@ -33,20 +33,23 @@ neighbours' :: Eq a => Float             -- ^Neighbourhood radius
             -> [(a,[a])]         -- ^List of item and neighbours within radius
 neighbours' rad (w,h) posF velF xs = map findNeighbours eligibleList
   where (xslots, yslots) = ([-w/2,-w/2+rad..w/2], [-h/2,-h/2+rad..h/2])
-        (gx,gy) = (length xslots-1, length yslots-1)
-        (buckets,items) = foldl' placeItem (M.empty,[]) (zip [1..] xs)
+        sz@(gx,gy) = (length xslots-1, length yslots-1)
+        (buckets,items) = foldl' placeItem
+                                 (listArray ((1,1),sz) $ repeat [],[])
+                                 (zip [1..] xs)
 
         findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
-          where helper (j,a) = (i /= j) && abs (pos' x - pos' a) < S rad
-                pos' c = v $ posF c
+          where (x1,y1) = posF x
+                helper (j,a) = (i /= j) && (sqrt $ (x1-x2)*(x1-x2) + (y1-x2)*(y1-y2)) < rad
+                  where (x2,y2) = posF a
 
         adjacentCells (x,y) = filter (\(x,y) -> not $ x < 1 || y < 1 || x > gx || y > gy)
                                 [(a,b) | a<-[x-1,x,x+1], b<-[y-1,y,y+1] ]
 
-        eligibleList = sndMap (concatMap (\a -> M.findWithDefault [] a buckets) . adjacentCells) items
+        eligibleList = sndMap (concatMap (buckets!) . adjacentCells) items
 
-        placeItem (gridMap,itemsAndLocations) item@((_,posF->(x,y))) =
-            (M.insertWith' (++) key [item] gridMap, (item,key):itemsAndLocations)
+        placeItem (gridArray,itemsAndLocations) item@((_,posF->(x,y))) =
+            (accum (\ a b -> b:a) gridArray [(key,item)], (item,key):itemsAndLocations)
            where key = ( length $ takeWhile (x>) xslots
                        , length $ takeWhile (y>) yslots)
 
