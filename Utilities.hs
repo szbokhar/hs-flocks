@@ -40,7 +40,7 @@ neighbours' rad (w,h) posF velF xs = map findNeighbours eligibleList
 
         findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
           where (x1,y1) = posF x
-                helper (j,a) = (i /= j) && (sqrt $ (x1-x2)*(x1-x2) + (y1-x2)*(y1-y2)) < rad
+                helper (j,a) = (i /= j) && (sqrt $ (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)) < rad
                   where (x2,y2) = posF a
 
         adjacentCells (x,y) = filter (\(x,y) -> not $ x < 1 || y < 1 || x > gx || y > gy)

@@ -25,25 +25,23 @@ drawPoints = map (\(x,y) -> translate x y $ color blue $ circleSolid 3)
 drawNet list = Pictures $ concatMap (\(it,xs)-> map (\a -> line [it,a]) xs) list
                   ++ drawPoints (map fst list)
 
-neighbours' rad (w,h) posF velF xs = zip xs (elems finalArray)
+neighbours' :: Eq a => Float             -- ^Neighbourhood radius
+            -> (Float, Float)    -- ^Width and height of the area
+            -> (a->Point)        -- ^Position function
+            -> (a->Point)        -- ^Velocity function
+            -> [a]               -- ^List of items
+            -> [(a,[a])]         -- ^List of item and neighbours within radius
+neighbours' rad (w,h) posF velF xs = map findNeighbours eligibleList
   where (xslots, yslots) = ([-w/2,-w/2+rad..w/2], [-h/2,-h/2+rad..h/2])
         sz@(gx,gy) = (length xslots-1, length yslots-1)
         (buckets,items) = foldl' placeItem
                                  (listArray ((1,1),sz) $ repeat [],[])
                                  (zip [1..] xs)
-        (finalArray,_) = foldl' addBird (listArray (1,length xs) $ repeat [],buckets) items
-
-        addBird (mat,buk) ((i,e1),bukPos) = (accum (flip (++)) mat matUp
-                                            ,accum (flip delete) buk [(bukPos,(i,e1))])
-          where matUp = (i,map snd neigh):[(j,[e1]) | (j,_)<-neigh]
-                neigh = filter helper elig
-                elig = concatMap (buckets!) $ adjacentCells bukPos
-                helper (j,e2) = (i /= j) && abs (pos' e1 - pos' e2) < S rad
-                pos' c = v $ posF c
 
         findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
-          where helper (j,a) = (i /= j) && abs (pos' x - pos' a) < S rad
-                pos' c = v $ posF c
+          where (x1,y1) = posF x
+                helper (j,a) = (i /= j) && (sqrt $ (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)) < rad
+                  where (x2,y2) = posF a
 
         adjacentCells (x,y) = filter (\(x,y) -> not $ x < 1 || y < 1 || x > gx || y > gy)
                                 [(a,b) | a<-[x-1,x,x+1], b<-[y-1,y,y+1] ]
