@@ -2,7 +2,7 @@ all: build
 	./FlockSimulation
 
 build:
-	ghc --make -O3 -W Main.hs -o FlockSimulation
+	ghc --make -O3 -Wall Main.hs -o FlockSimulation
 
 clean:
 	rm -rf *.hi *.o FlockSimulation doc

@@ -13,26 +13,32 @@ import Animal       ( makeFlock )
 import Simulate     ( Drawable(..), Simulate(..) )
 import Utilities    ( int, (|>) )
 
-mode = InWindow "Boids" (800,600) (20,20)
-
 -- |Main function
+main :: IO ()
 main = do
+    -- Parse Arguments
     config <- getArgs |> parseArguments
-    initFlock <- makeFlock (800,600) (4,9) 1 (birdCount config)
-                           0.2 2 5
+    -- Initialize flock
+    initFlock <- makeFlock (800,600) (4,9) 1 (birdCount config) 0.2 2 5
 
+    -- Execute run mode
     case simType config of
         Live            -> runLiveSimulation initFlock
         WriteToFile     -> writeSimulationToFile config initFlock
         ReadFromFile    -> readSimulation config initFlock
         Help            -> showHelpMessage
   where
+    -- Gloss winodw mode
+    mode = InWindow "Boids" (800,600) (20,20)
+
+    -- Live simulation mode
     runLiveSimulation initFlock =
         playIO mode white 30 initFlock
             (return . draw)
             (\a b -> return $ react a b)
             updateIO
 
+    -- Write simulation mode
     writeSimulationToFile config initSim = do
         -- Find writing target
         target <- if isNothing (file config)
@@ -47,6 +53,7 @@ main = do
         -- Close file
         F.hClose target
 
+    -- Render simulation form file or stdin
     readSimulation config dummy = do
         -- Find reading target
         target <- if isNothing (file config)
@@ -64,6 +71,7 @@ main = do
         -- Close source
         F.hClose target
 
+    -- Show help message
     showHelpMessage = putStrLn $
             "FlockSimulation\n"
          ++ "Options: -n count  - number of birds (default 4)\n"
@@ -96,6 +104,7 @@ data Config =
   deriving (Show, Read, Eq)
 
 -- |Default configuration for the program run without any commandline arguments
+defaultConfig :: Config
 defaultConfig = Config 4 Live 300 Nothing
 
 -- |Parse commandline arguments into a config

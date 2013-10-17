@@ -13,6 +13,7 @@ import System.Random
 import Simulate
 import Utilities
 import Vector       ( Vec2F(..), setMag )
+
 -------------------------------------------------------------------------------
 ----------------------------- Datatype Definitions ----------------------------
 
@@ -34,12 +35,13 @@ data Bird =
             }
   deriving (Read, Show, Eq)
 
+-- |Datatype to contain simulation values
 data DynamicsConstants =
-     DC { targetForce       :: !Float
-        , neighbourForce    :: !Float
-        , crowdForce        :: !Float
-        , field             :: !(Float, Float)   -- ^Game field
-        , neighbourhood     :: !(Float, Float)   -- ^Crowd and vision radius
+     DC { targetForce       :: !Float           -- ^Mouse position
+        , neighbourForce    :: !Float           -- ^Force from neighbour birds
+        , crowdForce        :: !Float           -- ^Force from crowded birds
+        , field             :: !(Float, Float)  -- ^Game field
+        , neighbourhood     :: !(Float, Float)  -- ^Crowd and vision radius
         }
   deriving (Read, Show, Eq)
 
@@ -72,6 +74,10 @@ instance Drawable Flock where
                  : Translate tx ty (Color red $ circleSolid 5)
                  : map draw pop
 
+
+-------------------------------------------------------------------------------
+----------------------- Instance Defintion for Simulate -----------------------
+
 -- |Allows a flock to be simulated
 instance Simulate Flock where
     -- |Update the target position on mouse movement
@@ -81,29 +87,30 @@ instance Simulate Flock where
     -- |No non-IO version of update
     update _ _ = error "Not implemented"
 
+    -- |Quick default for a flock
+    defaultSim = makeFlock (800,600) (4,9) 1 200 0.2 2 5
+
     -- |Update the flock by one timestep
     updateIO _ f@(Flock {..}) = do
-        pop' <-  mapM move' closeBirds
+        pop' <-  mapM (moveBird target constants) closeBirds
         return $ f { population = pop' }
-      where closeBirds = neighbours' visionR field position velocity population
-            move' = moveBird target constants
+      where closeBirds = neighbours visionR field position population
             DC { neighbourhood=(_,visionR), field=field} = constants
 
     -- |Converts a flock to a consice writable form
     toWritableString (Flock { population = birds }) =
         show $ map makeTup birds
-      where makeTup (Bird (x,y) (vx,vy) s _ _) = (x,y,vx,vy,s)
+      where makeTup (Bird { position=(x,y)
+                          , velocity=(vx,vy)
+                          , size=sz}) = (x,y,vx,vy,sz)
 
     -- |Renders a list of writable forms to a list of pictures
     renderStringIO _ xs = do
-        forM_ (zip [1..] parsedList) (\ (i,x) ->
+        forM_ (zip [(1::Double)..] parsedList) (\ (i,x) ->
             x `deepseq` putStrLn $ "Processing " ++ show (100*i/n) )
         return $ map (Pictures . map drawBird) parsedList
       where parsedList = map read xs :: [[(Float, Float, Float, Float, Float)]]
             n = fromIntegral $ length xs
-
-    -- |Quick default for a flock
-    defaultSim = makeFlock (800,600) (4,9) 1 200 0.2 2 5
 
 
 -- |Barebones bird drawing function
@@ -126,53 +133,34 @@ moveBird :: Point                   -- ^Target point that bird is drawn to
          -> (Bird, [Bird])          -- ^Bird to update and a list of neighbours
          -> IO Bird                 -- ^Updated bird
 moveBird (v->goal) consts (bird,birds) =
-    return bird { position = wrapPos (w,h) (p pos')       -- Update the position
-                , velocity = p vel' }     -- and velocity of the bird
+    return bird { position = wrapPos (w,h) (p pos'), velocity = p vel' }
   where
     -- Convienent identifiers
-    Bird { position = posP
-         , velocity = velP
-         , maxspeed = maxspd
-         , turnRange = r } = bird
-    DC   { neighbourhood = (crowdR, visionR)
-         , targetForce = tF
-         , neighbourForce = nF
-         , crowdForce = cF
-         , field = (w,h) } = consts
-    pos = v posP
-    vel = v velP
-
+    Bird { position = posP, velocity = velP, maxspeed = maxspd, turnRange = r }
+        = bird
+    DC   { neighbourhood = (crowdR, visionR), targetForce = tF
+         , neighbourForce = nF, crowdForce = cF, field = (w,h) } = consts
+    (pos,vel) = (v posP, v velP)
     -- New position and velocity
-    pos' = pos + vel'
-    vel' = computeCohesion 0.9 fvel nvel
-
+    (pos',vel') = (pos + vel', computeCohesion 0.9 fvel nvel)
     -- Velocity from resultant forces
-    fvel = restrictDir vel r
-         $ restrictMag maxspd (0.5 * (vel
-         + restrictMag maxspd (vel + totalForce)))
+    fvel = restrictDir vel r $ restrictMag maxspd
+           (0.5 * (vel + restrictMag maxspd (vel + totalForce)))
     -- Average velocity from neighbour birds
     nvel = foldl' (\a b -> a + v (velocity b)) fvel birds / (1+numNeighbours)
-
     -- Total force that affects the bird's motion
-    totalForce = neighbourForce birds
-               + crowdForce
-               + goalForce
-               + borderForce
-             --  - 0.05*vel
+    totalForce = nForce birds + sum crowdForce + goalForce + borderForce
     -- Foce drawing the bird towards the target (mouse)
     goalForce = setMag (S tF) (goal-pos)
     -- Force that pushes the bird away from close neighbours
-    crowdForce =
-        sum $ map (computeRepulsion crowdR (0,cF) pos . v . position) birds
+    crowdForce = map (computeRepulsion crowdR (0,cF) pos . v . position) birds
     -- Force that draws the bird to the average position of all it's neighbours
-    neighbourForce [] = V 0 0
-    neighbourForce b  =
-        setMag (S nF) $ sum (map (v . position) b) / numNeighbours - pos
+    nForce [] = V 0 0
+    nForce b  = setMag (S nF) $ sum (map (v . position) b) / numNeighbours - pos
     -- Force of repulsion by border
     borderForce = sum $ map (computeRepulsion visionR (0,cF*3) pos) locs
       where V xx yy = pos
             locs = [V xx (-h/2), V xx (h/2), V (-w/2) yy, V (w/2) yy]
-
     -- Number of neighbours the bird has
     numNeighbours = fromIntegral $ length birds
 
@@ -188,7 +176,7 @@ makeFlock :: (Float, Float)     -- ^Width and height of the field
           -> Float              -- ^Neighbour Force
           -> Float              -- ^Crowd Force
           -> IO Flock           -- ^Randomized Flock of birds
-makeFlock (width, height) (lspd, tspd) fact n f1 f2 f3= do
+makeFlock (width, height) (lspd, tspd) fact n f1 f2 f3 = do
     birds <- forM [1..n] (\_ -> do
         x <- randomRIO (-width/2,width/2)       -- Random x position
         y <- randomRIO (-height/2,height/2)     -- Random y position
