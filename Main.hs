@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative                      ( (<$>) )
 import Control.Monad                            ( foldM_  )
 import Data.Maybe                               ( isNothing, fromJust )
 import Graphics.Gloss.Interface.IO.Game         ( playIO )
@@ -10,7 +11,8 @@ import System.Environment                       ( getArgs )
 import qualified System.IO as F
 
 import Animal       ( makeFlock )
-import Simulate     ( Drawable(..), Simulate(..) )
+import Water        ( makeFluid )
+import Simulate     ( Drawable(..), Simulate(..), Sim(..))
 import Utilities    ( int, (|>) )
 
 -- |Main function
@@ -18,8 +20,8 @@ main :: IO ()
 main = do
     -- Parse Arguments
     config <- getArgs |> parseArguments
-    -- Initialize flock
-    initFlock <- makeFlock (800,600) (4,9) 1 (birdCount config) 0.2 2 5
+    -- Initialize simulation
+    initFlock <- simChoose config (simIndex config)
 
     -- Execute run mode
     case simType config of
@@ -29,7 +31,7 @@ main = do
         Help            -> showHelpMessage
   where
     -- Gloss winodw mode
-    mode = InWindow "Boids" (800,600) (20,20)
+    mode = InWindow "Boids" (1024,720) (20,20)
 
     -- Live simulation mode
     runLiveSimulation initFlock =
@@ -74,14 +76,29 @@ main = do
     -- Show help message
     showHelpMessage = putStrLn $
             "FlockSimulation\n"
-         ++ "Options: -n count  - number of birds (default 4)\n"
+         ++ "Options: -n count  - number of elements (default 4)\n"
          ++ "         -l        - run live simulation (default)\n"
          ++ "         -o        - write simulation to stdout\n"
          ++ "         -i        - display simulation read in from stdin\n"
          ++ "         -f file   - use file instead of stdin/stdout\n"
          ++ "         -s steps  - number of steps to simulate when writing\n"
+         ++ "         -j [0,1]  - 0 for water sim, 1 for bird sim\n"
          ++ "         -h        - display help\n"
 
+    -- Sets up the simulation based on the input integer
+    simChoose :: Config -> Int -> IO Sim
+    simChoose config 0 = Sim <$> makeFluid (800,600) (4,100) 1 (count config)
+                           0.3          -- Target
+                           0.1          -- Neighbour
+                           5            -- Crowd
+                           0.01         -- Damp
+                           0.9          -- Gravity
+                           (30, 50)     -- Neighbours
+    simChoose config 1 = Sim <$> makeFlock (1024,720) (4,9) 1 (count config)
+                           0.0          -- Target
+                           4          -- Neighbour
+                           5            -- Crowd
+    simChoose _ _ = error "Unknown Simulation index"
 
 -------------------------------------------------------------------------------
 ------------------------------ Configuration ----------------------------------
@@ -96,25 +113,27 @@ data SimulationTypes =
 
 -- |Completly describes the configuration to run the simulation with
 data Config =
- Config { birdCount :: Int              -- Number of birds in the simulation
+ Config { count :: Int                  -- Number of birds in the simulation
         , simType :: SimulationTypes    -- Simulation type
         , simulationSteps :: Int        -- Number of steps to run when writing
         , file :: Maybe String          -- File to use when reading and writing
+        , simIndex :: Int               -- Whether to run a water or bird sim
         }
   deriving (Show, Read, Eq)
 
 -- |Default configuration for the program run without any commandline arguments
 defaultConfig :: Config
-defaultConfig = Config 4 Live 300 Nothing
+defaultConfig = Config 4 Live 300 Nothing 0
 
 -- |Parse commandline arguments into a config
 parseArguments :: [String] -> Config
 parseArguments [] = defaultConfig
-parseArguments ("-n":n:xs) = (parseArguments xs) { birdCount = int n }
+parseArguments ("-n":n:xs) = (parseArguments xs) { count = int n }
 parseArguments ("-s":n:xs) = (parseArguments xs) { simulationSteps = int n }
 parseArguments ("-l":xs) = (parseArguments xs) { simType = Live }
 parseArguments ("-o":xs) = (parseArguments xs) { simType = WriteToFile }
 parseArguments ("-i":xs) = (parseArguments xs) { simType = ReadFromFile }
 parseArguments ("-f":f:xs) = (parseArguments xs) { file = Just f }
 parseArguments ("-h":xs) = (parseArguments xs) { simType = Help }
+parseArguments ("-j":n:xs) = (parseArguments xs) { simIndex = int n }
 parseArguments xs = error $ "Unrecognized commandline arguments: " ++ show xs

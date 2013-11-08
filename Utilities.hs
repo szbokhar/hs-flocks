@@ -23,7 +23,7 @@ neighbours rad (w,h) posF itemList = map findNeighbours eligibleList
     sz@(gx,gy) = (length xslots-1, length yslots-1)
     -- Array of cells and contained birds, and a list of birds and corresponding cells
     (buckets,items) = foldl' placeItem
-                             (listArray ((1,1),sz) $ repeat [],[])
+                             (listArray ((0,0),(gx+1,gy+1)) $ repeat [],[])
                              (zip [(1::Int)..] itemList)
     -- Takes a list of neighbour candidtaes and selects the true neighbours
     findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)

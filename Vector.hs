@@ -35,7 +35,7 @@ instance Num Vec2F where
     signum (S s) = S (signum s)
     signum v@(V x y) = V (x/m) (y/m) where m = (\(S n) -> sqrt n) $ v*v
 
-    -- |Converts a numeric literal to a Vec3F (scalar) type
+    -- |Converts a numeric literal to a Vec2F (scalar) type
     fromInteger n = S (fromIntegral n)
 
 -- |Make Vec2F a Fractional type for use of division operator and fromRational.
@@ -86,7 +86,7 @@ rotateVec theta (V x y) =
     V (x*cos theta - y*sin theta) (x * sin theta + y * cos theta)
 rotateVec _ a = a
 
--- |Alias for getting a vector's unite vector.
+-- |Alias for getting a vector's unit vector.
 norm :: Vec2F -> Vec2F
 norm = signum
 

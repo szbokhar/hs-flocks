@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Simulate where
 
 import Graphics.Gloss
@@ -7,8 +8,8 @@ import Graphics.Gloss.Interface.IO.Game
 class Drawable a where
     draw :: a -> Picture
 
--- |Class that makes a class simulatable
-class (Drawable a, Read a, Show a) => Simulate a where
+-- |Class that makes a type simulatable
+class (Drawable a, Show a) => Simulate a where
     -- |React datatype to user input
     react :: Event -> a -> a
     react _ a = a
@@ -35,3 +36,26 @@ class (Drawable a, Read a, Show a) => Simulate a where
 
     -- |A default for the datatype
     defaultSim :: IO a
+
+-- |Container for simulation types
+data Sim = forall a. (Drawable a, Show a, Simulate a) => Sim a
+
+-- |Show declaration for Sim
+instance Show Sim where
+    show (Sim a) = show a
+
+-- |Drawable declaration for Sim
+instance Drawable Sim where
+    draw (Sim a) = draw a
+
+-- |Simulate declaration for Sim
+instance Simulate Sim where
+    react e (Sim a) = Sim (react e a)
+    update n (Sim a) = Sim (update n a)
+    reactIO e (Sim a) = do b <- reactIO e a
+                           return (Sim b)
+    updateIO n (Sim a) = do b <- updateIO n a
+                            return (Sim b)
+    toWritableString (Sim a) = toWritableString a
+    renderStringIO (Sim a) xs = renderStringIO a xs
+    defaultSim = undefined
