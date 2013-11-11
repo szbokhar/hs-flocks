@@ -66,7 +66,9 @@ instance NFData Fluid where
 
 -- |Allows a bird to be drawn
 instance Drawable WaterP where
-    draw (WaterP {position=(x,y), size=sz}) = drawCircle (x,y,sz)
+    draw (WaterP {position=v->pos@(V x y), velocity=v->vel}) =
+        Pictures $ (Line $ map p [pos+0.5*vel, pos-0.5*vel])
+                 : [Translate x y $ Color blue $ Circle 1]
 
 -- |Allows a flock of any type of drawable cerature to be drawn
 instance Drawable Fluid where
@@ -136,7 +138,7 @@ moveWaterP (v->goal) consts (part,nParts) =
     (pos,vel) = (v posP, v velP)
 
     -- New position and velocity
-    (pos',vel') = (pos + vel', computeCohesion 0.9 fvel nvel)
+    (pos',vel') = (pos + vel', computeCohesion 0.7 fvel nvel)
     -- Velocity from resultant forces
     fvel = restrictMag maxspd
            (0.5 * (vel + restrictMag maxspd (vel + totalForce)))
@@ -199,7 +201,7 @@ makeFluid (width, height) (lspd, tspd) fact n f1 f2 f3 f4 f5 hood = do
         return WaterP { position = (x,y)
                     , velocity = (spd*cos dir,spd*sin dir)
                     , size = fact*spd
-                    , maxspeed = spd
+                    , maxspeed = tspd
                     , turnRange = 10
                     }
         )

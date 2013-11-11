@@ -87,13 +87,13 @@ main = do
 
     -- Sets up the simulation based on the input integer
     simChoose :: Config -> Int -> IO Sim
-    simChoose config 0 = Sim <$> makeFluid (800,600) (4,100) 1 (count config)
-                           0.3          -- Target
+    simChoose config 0 = Sim <$> makeFluid (640,480) (4,100) 1 (count config)
+                           0.0          -- Target
                            0.1          -- Neighbour
                            5            -- Crowd
-                           0.01         -- Damp
+                           0.03         -- Damp
                            0.9          -- Gravity
-                           (30, 50)     -- Neighbours
+                           (20, 40)     -- Neighbours
     simChoose config 1 = Sim <$> makeFlock (1024,720) (4,9) 1 (count config)
                            0.0          -- Target
                            4          -- Neighbour

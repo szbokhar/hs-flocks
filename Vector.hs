@@ -11,12 +11,14 @@ instance Num Vec2F where
     -- |Addition operator. Adding two vectors adds the corraponding components.
     --  Adding a scalar and a vector adds the scalar to both vector components.
     --  Adding two scalars just adds the values together
+    {-# INLINE (+) #-}
     (+) (S s1) (S s2) = S (s1+s2)
     (+) (V x1 y1) (S s) = V (x1+s) (y1+s)
     (+) (S s) (V x1 y1) = V (x1+s) (y1+s)
     (+) (V x1 y1) (V x2 y2) = V (x1+x2) (y1+y2)
 
     -- |Extends negation to vectors.
+    {-# INLINE negate #-}
     negate (V x y) = V (-x) (-y)
     negate (S s) = S (-s)
 
@@ -26,14 +28,17 @@ instance Num Vec2F where
     (*) (V x1 y1) (S s) = V (x1*s) (y1*s)
     (*) (S s) (V x1 y1) = V (x1*s) (y1*s)
     (*) (V x1 y1) (V x2 y2) = S (x1*x2+y1*y2)
+    {-# INLINE (*) #-}
 
     -- |Magnitude of scalar and vector.
     abs (S s) = S (abs s)
     abs v = S (sqrt m) where S m = v*v
+    {-# INLINE abs #-}
 
     -- |The sign of a scalar. A unit vector of a given vector
     signum (S s) = S (signum s)
     signum v@(V x y) = V (x/m) (y/m) where m = (\(S n) -> sqrt n) $ v*v
+    {-# INLINE signum #-}
 
     -- |Converts a numeric literal to a Vec2F (scalar) type
     fromInteger n = S (fromIntegral n)
@@ -47,9 +52,11 @@ instance Fractional Vec2F where
         error $ "Cannot divide " ++ show s ++ " by " ++ show v
     (/) v1@(V _ _) v2@(V _ _) =
         error $ "Cannot divide " ++ show v1 ++ " by " ++ show v2
+    {-# INLINE (/) #-}
 
     -- |Reciprocal of a vector or scalar.
     recip = vmap (1/)
+    {-# INLINE recip #-}
 
     -- |Converts a numeric floating literal to a Vec2F (scalar) type
     fromRational r = S (fromRational r)
@@ -89,21 +96,26 @@ rotateVec _ a = a
 -- |Alias for getting a vector's unit vector.
 norm :: Vec2F -> Vec2F
 norm = signum
+{-# INLINE norm #-}
 
 -- |Converts a vector to a point
 toPoint :: Vec2F -> (Float, Float)
 toPoint (V x y) = (x,y)
 toPoint (S s) = (s,s)
+{-# INLINE toPoint #-}
 
 -- |Converts a point to a vector
 toVec :: (Float, Float) -> Vec2F
 toVec (x,y) = V x y
+{-# INLINE toVec #-}
 
 -- |Maps a function over the elements of a vector
 vmap :: (Float -> Float) -> Vec2F -> Vec2F
 vmap f (S s) = S (f s)
 vmap f (V x y) = V (f x) (f y)
+{-# INLINE vmap #-}
 
 -- |Sets the magnitude of a vector
 setMag :: Vec2F -> Vec2F -> Vec2F
 setMag m v = m * norm v
+{-# INLINE setMag #-}
