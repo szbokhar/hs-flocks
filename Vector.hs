@@ -77,6 +77,19 @@ instance Floating Vec2F where
     asinh = vmap asinh
     acosh = vmap acosh
     atanh = vmap atanh
+    {-# INLINE pi #-}
+    {-# INLINE exp #-}
+    {-# INLINE log #-}
+    {-# INLINE sin #-}
+    {-# INLINE cos #-}
+    {-# INLINE sinh #-}
+    {-# INLINE cosh #-}
+    {-# INLINE asin #-}
+    {-# INLINE acos #-}
+    {-# INLINE atan #-}
+    {-# INLINE asinh #-}
+    {-# INLINE acosh #-}
+    {-# INLINE atanh #-}
 
 -- |Cross product of two Vec2F vectors. Since the result will have no component
 --  in the x or y direction, a scalar is returned as the z component of the
@@ -86,12 +99,14 @@ cross (V x1 y1) (V x2 y2) = S $ x1*y2-x2*y1
 cross (S _) (V _ _) = error "No cross product on vector and scalar"
 cross (V _ _) (S _) = error "No cross product on vector and scalar"
 cross (S _) (S _) = error "No cross product on scalar and scalar"
+{-# INLINE cross #-}
 
 -- |Rotate a vector by the radian angle passed in. Has no effect on scalars
 rotateVec :: Float -> Vec2F -> Vec2F
 rotateVec theta (V x y) =
     V (x*cos theta - y*sin theta) (x * sin theta + y * cos theta)
 rotateVec _ a = a
+{-# INLINE rotateVec #-}
 
 -- |Alias for getting a vector's unit vector.
 norm :: Vec2F -> Vec2F

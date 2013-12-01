@@ -10,6 +10,8 @@ import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import System.Random
 
+import qualified Data.Vector            as V
+
 import Simulate
 import Utilities
 import Vector       ( Vec2F(..), setMag )
@@ -19,7 +21,7 @@ import Vector       ( Vec2F(..), setMag )
 
 -- |A flock of some type of creature
 data Fluid = Fluid
-            { population    :: ![WaterP]  -- ^List of population members
+            { population    :: V.Vector WaterP  -- ^List of population members
             , target        :: !Point            -- ^Point all members are drawn
             , constants     :: !DynamicsConstants-- ^Dynamic constants
             }
@@ -31,7 +33,6 @@ data WaterP = WaterP
             , velocity  :: !Point                -- ^Velocity vector of the bird
             , size      :: !Float                -- ^Size to draw the bird
             , maxspeed  :: !Float                -- ^The max speed of the bird
-            , turnRange :: !Float                -- ^Max allowable turning angle
             }
   deriving (Read, Show, Eq)
 
@@ -53,7 +54,7 @@ data DynamicsConstants =
 -- |Allow a Bird to be fully evaluated with deepseq
 instance NFData WaterP where
     rnf (WaterP {..}) = foldl' seq ()
-        [rnf position, rnf velocity, rnf size, rnf maxspeed]--, rnf turnRange]
+        [rnf position, rnf velocity, rnf size, rnf maxspeed]
 
 -- |Allow a Flock of NFData to be fully evaluated with deepseq
 instance NFData Fluid where
@@ -75,7 +76,7 @@ instance Drawable Fluid where
     draw (Fluid {target=(tx,ty), population=pop, constants=DC {field=(w,h)}}) =
         Pictures $ rectangleWire w h
                  : Translate tx ty (Color red $ circleSolid 5)
-                 : map draw pop
+                 : V.toList (V.map draw pop)
 
 
 -------------------------------------------------------------------------------
@@ -95,14 +96,14 @@ instance Simulate Fluid where
 
     -- |Update the flock by one timestep
     updateIO _ f@(Fluid {..}) = do
-        pop' <-  mapM (moveWaterP target constants) closeParts
+        pop' <- V.mapM (moveWaterP target constants closeParts) closeParts
         return $ f { population = pop' }
-      where closeParts = neighbours visionR field position population
+      where closeParts = neighbours' visionR field position population
             DC { neighbourhood=(_,visionR), field=field} = constants
 
     -- |Converts a flock to a consice writable form
     toWritableString (Fluid { population = parts }) =
-        show $ map makeTup parts
+        show $ map makeTup $ V.toList parts
       where makeTup (WaterP { position=(x,y), size=sz}) = (x,y,sz)
 
     -- |Renders a list of writable forms to a list of pictures
@@ -124,13 +125,14 @@ drawCircle (x,y,sz) = color blue $ translate x y $ circle 3
 -- |Move every bord in the flock towards the point
 moveWaterP :: Point                   -- ^Target point that part is drawn to
            -> DynamicsConstants       -- ^Dynamics Constants
+           -> V.Vector (WaterP,[WaterP])
            -> (WaterP, [WaterP])      -- ^Bird to update and a list of neighbours
            -> IO WaterP               -- ^Updated part
-moveWaterP (v->goal) consts (part,nParts) =
-    return $ keepIn $ part { position = (p pos'), velocity = p vel' }
+moveWaterP (v->goal) consts nlist (part,nParts) =
+    return $ keepIn $ part { position = p pos', velocity = p vel' }
   where
     -- Convienent identifiers
-    WaterP { position = posP, velocity = velP, maxspeed = maxspd, turnRange = r }
+    WaterP { position = posP, velocity = velP, maxspeed = maxspd }
         = part
     DC   { neighbourhood = (crowdR, visionR), targetForce = tF
          , neighbourForce = nF, crowdForce = cF, field = (w,h)
@@ -202,10 +204,9 @@ makeFluid (width, height) (lspd, tspd) fact n f1 f2 f3 f4 f5 hood = do
                     , velocity = (spd*cos dir,spd*sin dir)
                     , size = fact*spd
                     , maxspeed = tspd
-                    , turnRange = 10
                     }
         )
-    return Fluid { population = birds
+    return Fluid { population = V.fromList birds
                  , target = (20,20)
                  , constants =
                     DC { field = (width,height)

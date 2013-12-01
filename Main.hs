@@ -92,7 +92,7 @@ main = do
                            0.1          -- Neighbour
                            5            -- Crowd
                            0.03         -- Damp
-                           0.9          -- Gravity
+                           2          -- Gravity
                            (20, 40)     -- Neighbours
     simChoose config 1 = Sim <$> makeFlock (1024,720) (4,9) 1 (count config)
                            0.0          -- Target

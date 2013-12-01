@@ -6,6 +6,8 @@ import Data.Array
 import Data.List        ( foldl' )
 import Graphics.Gloss   ( Point )
 
+import qualified Data.Vector            as V
+
 import Vector
 
 -- |Computes all the neighbours in a given radius
@@ -25,6 +27,41 @@ neighbours rad (w,h) posF itemList = map findNeighbours eligibleList
     (buckets,items) = foldl' placeItem
                              (listArray ((0,0),(gx+1,gy+1)) $ repeat [],[])
                              (zip [(1::Int)..] itemList)
+    -- Takes a list of neighbour candidtaes and selects the true neighbours
+    findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
+      where (x1,y1) = posF x
+            helper (j,a) = (i /= j)
+                        && (sqrt $ (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)) < rad
+              where (x2,y2) = posF a
+    -- Takes the cell a bird is in and constructs a list of candidate cells
+    adjacentCells (x,y) = filter
+        (\(ix,iy) -> not $ ix < 1 || iy < 1 || ix > gx || iy > gy)
+        [(a,b) | a<-[x-1,x,x+1], b<-[y-1,y,y+1] ]
+    -- List of birds and candidate birds
+    eligibleList = sndMap (concatMap (buckets!) . adjacentCells) items
+    -- Constructs an array of cells and contained birds
+    placeItem (gridArray,itemsAndLocations) item@((_,posF->(x,y))) =
+        (accum (\ a b -> b:a) gridArray [(key,item)], (item,key):itemsAndLocations)
+       where key = ( length $ takeWhile (x>) xslots
+                   , length $ takeWhile (y>) yslots)
+
+-- |Computes all the neighbours in a given radius
+neighbours' :: Eq a
+           => Float            -- ^Neighbourhood radius
+           -> (Float, Float)   -- ^Width and height of the area
+           -> (a->Point)       -- ^Position function
+           -> V.Vector a       -- ^List of items
+           -> V.Vector (a,[a]) -- ^List of item and neighbours within radius
+neighbours' rad (w,h) posF itemList = V.fromList $ map findNeighbours eligibleList
+  where
+    -- Number of cells/slots in the x and y direction
+    (xslots, yslots) = ([-w/2,-w/2+rad..w/2], [-h/2,-h/2+rad..h/2])
+    -- The grid size
+    sz@(gx,gy) = (length xslots-1, length yslots-1)
+    -- Array of cells and contained birds, and a list of birds and corresponding cells
+    (buckets,items) = foldl' placeItem
+                             (listArray ((0,0),(gx+1,gy+1)) $ repeat [],[])
+                             (zip [(1::Int)..] $ V.toList itemList)
     -- Takes a list of neighbour candidtaes and selects the true neighbours
     findNeighbours ((i,x),xs) = (x,map snd $ filter helper xs)
       where (x1,y1) = posF x
