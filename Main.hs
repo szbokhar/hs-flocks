@@ -11,7 +11,6 @@ import System.Environment                       ( getArgs )
 import qualified System.IO as F
 
 import Animal       ( makeFlock )
-import Water        ( makeFluid )
 import Simulate     ( Drawable(..), Simulate(..), Sim(..))
 import Utilities    ( int, (|>) )
 
@@ -87,14 +86,7 @@ main = do
 
     -- Sets up the simulation based on the input integer
     simChoose :: Config -> Int -> IO Sim
-    simChoose config 0 = Sim <$> makeFluid (640,480) (4,100) 1 (count config)
-                           0.0          -- Target
-                           0.1          -- Neighbour
-                           5            -- Crowd
-                           0.03         -- Damp
-                           2          -- Gravity
-                           (20, 40)     -- Neighbours
-    simChoose config 1 = Sim <$> makeFlock (1024,720) (4,9) 1 (count config)
+    simChoose config 0 = Sim <$> makeFlock (1024,720) (4,9) 1 (count config)
                            0.0          -- Target
                            4          -- Neighbour
                            5            -- Crowd
